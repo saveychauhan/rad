@@ -425,9 +425,13 @@
             text-align: right;
             padding-right: 4px;
         }
+        .sidebar-content {
             padding: 28px;
             gap: 28px;
+            display: flex;
+            flex-direction: column;
             overflow-y: auto;
+            flex: 1;
         }
 
         .sidebar-section {
@@ -628,22 +632,17 @@
 
     <!-- MISSION CONTROL SIDEBAR -->
     <div class="sidebar">
-        <div class="sidebar-section">
-            <div class="sidebar-title">Mission Control</div>
-            <div id="task-list" class="task-list">
-                <div class="task-card" data-priority="medium" data-status="todo">
-                    <div class="task-title">Initialize systems...</div>
-                    <div class="task-meta">
-                        <span class="badge badge-medium">medium</span>
-                        <span class="badge badge-todo">todo</span>
-                    </div>
+        <div class="sidebar-content">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Mission Control</div>
+                <div id="task-list" class="task-list">
+                    <!-- Tasks will be injected here -->
                 </div>
             </div>
-        </div>
 
-        <div class="sidebar-section">
-            <div class="sidebar-title purple">Neural Shift</div>
-            <div class="model-selector-wrap">
+            <div class="sidebar-section">
+                <div class="sidebar-title purple">Neural Shift</div>
+                <div class="model-selector-wrap">
                 <select id="model-selector">
                     <option value="kimi">KIMI (High Tier)</option>
                     <option value="mistral">MISTRAL (Balanced)</option>
@@ -664,6 +663,7 @@
                     <div class="stat-label">Model</div>
                     <div class="stat-value" id="model-stat">KIMI</div>
                 </div>
+            </div>
             </div>
         </div>
     </div>
@@ -725,7 +725,10 @@
                 loadTasks();
             } else if (data.type === 'brain_shift') {
                 modelSelector.value = data.model;
-                modelStat.innerText = data.model.toUpperCase();
+                if (modelStat) modelStat.innerText = data.model.toUpperCase();
+            } else if (data.type === 'force_refresh') {
+                console.log("[SYSTEM] Hot reload triggered...");
+                window.location.reload();
             }
         };
 

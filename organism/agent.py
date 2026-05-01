@@ -83,7 +83,7 @@ class RadAgent:
             return
 
         if not stream:
-            response_text, cost = await self.brain.think(messages, stream=False)
+            response_text, cost, tokens = await self.brain.think(messages, stream=False)
             await APICall.objects.acreate(prompt=f"Model: {self.brain.model}", pollen_cost=cost)
             
             tool_result = await self.handle_tools(response_text)
