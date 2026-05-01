@@ -69,8 +69,8 @@ class RadAgent:
 
     async def think(self, messages, stream=False, depth=0):
         """Processes messages through the brain with a recursion limit to prevent loops."""
-        if depth > 3:
-            yield "ERROR: Neural loop detected. Safety break engaged. Please simplify your request."
+        if depth > 6:
+            yield "ERROR: Neural recursion limit exceeded (depth > 6). Safety brake engaged."
             return
 
         if not await check_internet():
