@@ -9,6 +9,18 @@ from django.conf import settings
 from .agent import RadAgent
 from .models import ChatMessage
 
+_LOCK_PATH = os.path.join(settings.BASE_DIR, '.rad_busy')
+
+def _set_busy(busy=True):
+    if busy:
+        with open(_LOCK_PATH, 'w') as f:
+            f.write(str(time.time()))
+    else:
+        if os.path.exists(_LOCK_PATH):
+            os.remove(_LOCK_PATH)
+
+_set_busy(False) # Clear on start
+
 _TEMPLATE_PATH = os.path.join(settings.BASE_DIR, 'organism', 'templates', 'organism', 'chat.html')
 
 def _template_watcher():
