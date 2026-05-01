@@ -4,6 +4,9 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils import timezone
 import json
+import os
+import time
+from django.conf import settings
 
 @shared_task
 def run_command_task(command, task_id=None):
@@ -57,3 +60,79 @@ def run_command_task(command, task_id=None):
             task.status = 'todo' # Reset on failure
             task.save()
         return str(e)
+
+@shared_task
+def process_rad_thought(message_content, history):
+    """
+    Offloads Rad's complex thinking and tool execution to Celery.
+    Streams results back to the UI via WebSockets.
+    """
+    from .agent import RadAgent
+    from .models import ChatMessage
+    from asgiref.sync import async_to_sync
+    import asyncio
+
+    agent = RadAgent()
+    channel_layer = get_channel_layer()
+    group_name = "rad_comm"
+
+    # Set busy lock
+    lock_path = os.path.join(settings.BASE_DIR, '.rad_busy')
+    with open(lock_path, 'w') as f:
+        f.write(str(time.time()))
+
+    async def run_thought():
+        try:
+            # Add user message to history if not already there (it was added in consumer)
+            memory = await agent.get_initial_messages()
+            memory.extend(history)
+            
+            full_response = ""
+            current_cost = 0.0
+            in_tokens = 0
+            out_tokens = 0
+            current_model_before = agent.brain.model
+
+            async for chunk in agent.think(memory, stream=True):
+                if chunk.startswith("__META__:"):
+                    parts = chunk.split(":")[1].split("|")
+                    current_cost = float(parts[0])
+                    if len(parts) > 2:
+                        in_tokens = int(parts[1])
+                        out_tokens = int(parts[2])
+                    continue
+                if chunk.startswith("__COST__:"):
+                    current_cost = float(chunk.split(":")[1])
+                    continue
+                
+                full_response += chunk
+                await channel_layer.group_send(group_name, {
+                    "type": "rad_chunk_event",
+                    "content": chunk
+                })
+
+            # Save assistant response
+            await ChatMessage.objects.acreate(role="assistant", content=full_response)
+            
+            # Finalize
+            await channel_layer.group_send(group_name, {
+                "type": "rad_complete_event",
+                "content": full_response,
+                "cost": current_cost,
+                "in_tokens": in_tokens,
+                "out_tokens": out_tokens
+            })
+
+            current_model_after = agent.brain.model
+            if current_model_before != current_model_after:
+                await channel_layer.group_send(group_name, {
+                    "type": "brain_shift_event",
+                    "model": current_model_after
+                })
+
+        finally:
+            if os.path.exists(lock_path):
+                os.remove(lock_path)
+
+    asyncio.run(run_thought())
+    return "Thought complete"
