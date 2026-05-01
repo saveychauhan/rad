@@ -31,6 +31,17 @@ class RadAgent:
             }
         )
 
+    async def broadcast_status(self, content):
+        """Pushes a status update to all connected WebSocket clients."""
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
+            "rad_comm",
+            {
+                "type": "rad_status_event",
+                "content": content,
+            }
+        )
+
         
     def get_soul(self):
         with open(self.soul_path, 'r') as f:
