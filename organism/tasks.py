@@ -83,7 +83,12 @@ def process_rad_thought(message_content, history):
 
     async def run_thought():
         try:
-            # Add user message to history if not already there (it was added in consumer)
+            await channel_layer.group_send(group_name, {
+                "type": "rad_status_event",
+                "content": "Rad is synthesizing a response..."
+            })
+            
+            # Add user message to history
             memory = await agent.get_initial_messages()
             memory.extend(history)
             
