@@ -21,8 +21,8 @@ async def chat_view(request):
         
         # 2. Build Context from History (Smart Memory Window)
         history = []
-        max_hist_chars = 12000
-        max_msg_chars = 3000
+        max_hist_chars = 4000
+        max_msg_chars = 1500
         current_chars = 0
         
         async for msg in ChatMessage.objects.all().order_by('-timestamp'):
