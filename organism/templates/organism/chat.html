@@ -587,7 +587,23 @@
             .dashboard { grid-template-columns: 1fr; }
             .sidebar { display: none; }
         }
-    </style>
+        .creator-tag {
+        font-size: 0.65rem;
+        background: var(--purple-accent);
+        color: white;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-weight: 800;
+        margin-left: 5px;
+        vertical-align: middle;
+    }
+    .sched-tag {
+        font-size: 0.7rem;
+        color: var(--cyan-accent);
+        font-family: var(--font-mono);
+        margin-left: 10px;
+    }
+</style>
 </head>
 <body>
 
@@ -792,10 +808,14 @@
             if (data.tasks && data.tasks.length > 0) {
                 taskList.innerHTML = data.tasks.map(t => `
                     <div class="task-card" data-priority="${t.priority}" data-status="${t.status}">
-                        <div class="task-title">${t.title}</div>
+                        <div class="task-title">
+                            ${t.title}
+                            ${t.created_by === 'sawan' ? '<span class="creator-tag">BY SAWAN</span>' : ''}
+                        </div>
                         <div class="task-meta">
                             <span class="badge badge-${t.priority}">${t.priority}</span>
                             <span class="badge badge-${t.status}">${t.status}</span>
+                            ${t.scheduled_for ? `<span class="sched-tag">⏳ ${t.scheduled_for}</span>` : ''}
                         </div>
                     </div>
                 `).join('');
