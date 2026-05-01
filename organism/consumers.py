@@ -62,66 +62,43 @@ class RadConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         message = data.get('message')
         if message:
-            _set_busy(True)
-            try:
-                await ChatMessage.objects.acreate(role="user", content=message)
-                history = []
-                max_hist_chars = 4000
-                max_msg_chars = 1500
-                current_chars = 0
-                
-                async for msg in ChatMessage.objects.all().order_by('-timestamp'):
-                    content = msg.content
-                    if len(content) > max_msg_chars:
-                        content = content[:max_msg_chars] + "\n\n...[CONTENT TRUNCATED FOR MEMORY]..."
-                    
-                    if current_chars + len(content) > max_hist_chars:
-                        if not history: # Always include the very last message
-                            history.append({"role": msg.role, "content": content})
-                        break
-                        
-                    history.append({"role": msg.role, "content": content})
-                    current_chars += len(content)
-                    
-                history.reverse()
-                memory = await self.agent.get_initial_messages()
-                memory.extend(history)
-                await self.send(text_data=json.dumps({'type': 'status', 'content': 'Rad is thinking...'}))
-                current_model_before = self.agent.brain.model
-                full_response = ""
-                current_cost = 0.0
-                in_tokens = 0
-                out_tokens = 0
-                async for chunk in self.agent.think(memory, stream=True):
-                    if chunk.startswith("__META__:"):
-                        parts = chunk.split(":")[1].split("|")
-                        current_cost = float(parts[0])
-                        if len(parts) > 2:
-                            in_tokens = int(parts[1])
-                            out_tokens = int(parts[2])
-                        continue
-                    if chunk.startswith("__COST__:"):
-                        current_cost = float(chunk.split(":")[1])
-                        continue
-                    full_response += chunk
-                    await self.send(text_data=json.dumps({'type': 'chunk', 'role': 'rad', 'content': chunk}))
-                
-                current_model_after = self.agent.brain.model
-                await ChatMessage.objects.acreate(role="assistant", content=full_response)
-                
-                # Send completion with cost and tokens
-                await self.send(text_data=json.dumps({
-                    'type': 'message_complete', 
-                    'role': 'rad', 
-                    'content': full_response,
-                    'cost': current_cost,
-                    'in_tokens': in_tokens,
-                    'out_tokens': out_tokens
-                }))
-                if current_model_before != current_model_after:
-                    await self.send(text_data=json.dumps({'type': 'brain_shift', 'model': current_model_after}))
-            finally:
-                _set_busy(False)
+            # Persist User Message
+            await ChatMessage.objects.acreate(role="user", content=message)
+            
+            # Prepare History
+            history = []
+            max_hist_chars = 4000
+            max_msg_chars = 1500
+            current_chars = 0
+            async for msg in ChatMessage.objects.all().order_by('-timestamp'):
+                content = msg.content
+                if len(content) > max_msg_chars:
+                    content = content[:max_msg_chars] + "\n\n...[CONTENT TRUNCATED FOR MEMORY]..."
+                if current_chars + len(content) > max_hist_chars:
+                    if not history: history.append({"role": msg.role, "content": content})
+                    break
+                history.append({"role": msg.role, "content": content})
+                current_chars += len(content)
+            history.reverse()
+
+            await self.send(text_data=json.dumps({'type': 'status', 'content': 'Rad is processing in background subconscious (Celery)...'}))
+            
+            # Offload to Celery
+            from .tasks import process_rad_thought
+            process_rad_thought.delay(message, history)
+
+    async def rad_chunk_event(self, event):
+        await self.send(text_data=json.dumps({'type': 'chunk', 'role': 'rad', 'content': event['content']}))
+
+    async def rad_complete_event(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'message_complete', 
+            'role': 'rad', 
+            'content': event['content'],
+            'cost': event.get('cost', 0),
+            'in_tokens': event.get('in_tokens', 0),
+            'out_tokens': event.get('out_tokens', 0)
+        }))
 
     async def rad_broadcast(self, event):
         await self.send(text_data=json.dumps({'type': 'rad_broadcast', 'role': 'rad', 'content': event['content'], 'is_proactive': True}))
