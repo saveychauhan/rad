@@ -109,5 +109,8 @@ class RadConsumer(AsyncWebsocketConsumer):
     async def task_update_event(self, event):
         await self.send(text_data=json.dumps({'type': 'task_update_event'}))
 
+    async def rad_status_event(self, event):
+        await self.send(text_data=json.dumps({'type': 'status', 'content': event['content']}))
+
     async def force_refresh_event(self, event):
         await self.send(text_data=json.dumps({'type': 'force_refresh'}))

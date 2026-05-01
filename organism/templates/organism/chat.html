@@ -711,11 +711,16 @@
             const data = JSON.parse(e.data);
             
             if (data.type === 'status') {
-                const isThinking = data.content.toLowerCase().includes('thinking');
-                statusText.innerText = isThinking ? "SYNTHESIZING" : "ONLINE";
-                typingIndicator.style.display = isThinking ? 'flex' : 'none';
+                const content = data.content.toLowerCase();
+                const isBusy = content.includes('thinking') || content.includes('processing') || content.includes('subconscious');
+                statusText.innerText = isBusy ? "SYNTHESIZING" : "ONLINE";
+                typingIndicator.style.display = isBusy ? 'flex' : 'none';
+                if (isBusy) {
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }
             } else if (data.type === 'chunk') {
                 typingIndicator.style.display = 'none';
+                statusText.innerText = "STREAMING";
                 if (!activeMessageDiv) {
                     activeMessageDiv = createMessageDiv('rad');
                 }
@@ -733,6 +738,7 @@
                 }
                 activeMessageDiv = null;
                 activeContent = "";
+                statusText.innerText = "ONLINE";
                 loadTasks();
             } else if (data.type === 'rad_broadcast') {
                 appendMessage('rad', data.content);
