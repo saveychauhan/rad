@@ -846,7 +846,11 @@
     loadModels();
 
     // Scroll to bottom on load
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    const scrollToBottom = () => { chatWindow.scrollTop = chatWindow.scrollHeight; };
+    scrollToBottom();
+    // Double rAF ensures layout is fully settled after markdown/Prism render
+    requestAnimationFrame(() => requestAnimationFrame(scrollToBottom));
+    setTimeout(scrollToBottom, 150);
 </script>
 
 </body>
