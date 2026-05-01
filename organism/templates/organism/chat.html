@@ -656,8 +656,8 @@
             <div class="sidebar-title">System Status</div>
             <div class="stats-row">
                 <div class="stat-pill">
-                    <div class="stat-label">Pollen</div>
-                    <div class="stat-value" id="pollen-stat">0.4/hr</div>
+                    <div class="stat-label">Memory Limit</div>
+                    <div class="stat-value">100K</div>
                 </div>
                 <div class="stat-pill">
                     <div class="stat-label">Model</div>
@@ -709,10 +709,10 @@
                 Prism.highlightAllUnder(contentDiv);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             } else if (data.type === 'message_complete') {
-                if (activeMessageDiv && data.cost) {
+                if (activeMessageDiv && (data.in_tokens || data.out_tokens)) {
                     const badge = document.createElement('div');
                     badge.className = 'token-badge';
-                    badge.innerHTML = `⚡ ${data.cost.toFixed(3)} P`;
+                    badge.innerHTML = `📥 ${data.in_tokens || 0} | 📤 ${data.out_tokens || 0}`;
                     activeMessageDiv.appendChild(badge);
                 }
                 activeMessageDiv = null;
@@ -816,7 +816,7 @@
             if (data.models) {
                 modelSelector.innerHTML = data.models.map(m => `
                     <option value="${m.id}" ${m.id === data.current ? 'selected' : ''}>
-                        ${m.id.toUpperCase()} ${m.cost ? '('+m.cost+'P)' : ''}
+                        ${m.id.toUpperCase()}
                     </option>
                 `).join('');
                 if (data.current) modelStat.innerText = data.current.toUpperCase();

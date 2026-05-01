@@ -94,13 +94,13 @@ class RadConsumer(AsyncWebsocketConsumer):
                 await self.send(text_data=json.dumps({'type': 'brain_shift', 'model': current_model_after}))
 
     async def rad_broadcast(self, event):
-        await self.send(text_data=json.dumps({'type': 'message', 'role': 'rad', 'content': event['content'], 'is_proactive': True}))
+        await self.send(text_data=json.dumps({'type': 'rad_broadcast', 'role': 'rad', 'content': event['content'], 'is_proactive': True}))
 
     async def brain_shift_event(self, event):
         await self.send(text_data=json.dumps({'type': 'brain_shift', 'model': event['model']}))
 
     async def task_update_event(self, event):
-        await self.send(text_data=json.dumps({'type': 'task_update'}))
+        await self.send(text_data=json.dumps({'type': 'task_update_event'}))
 
     async def force_refresh_event(self, event):
         await self.send(text_data=json.dumps({'type': 'force_refresh'}))
