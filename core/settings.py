@@ -100,7 +100,7 @@ DATABASES = {
 POLLINATIONS_API_KEY = 'sk_N37eTJUmOulHUt3y3iDsCTI8APxGdCPV' # Add your key here if required
 POLLINATIONS_MODEL = 'kimi-k2.6'
 RAD_CONTEXT_WINDOW = 10 # Number of recent messages to keep in active context
-RAD_POLLEN_LIMIT = 10.0 # Hourly energy budget for Rad's thoughts
+RAD_POLLEN_LIMIT = 40.0 # Hourly energy budget for Rad's thoughts
 
 
 # Password validation
