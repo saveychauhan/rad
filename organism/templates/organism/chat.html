@@ -844,6 +844,9 @@
     connect();
     loadTasks();
     loadModels();
+
+    // Scroll to bottom on load
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 </script>
 
 </body>
