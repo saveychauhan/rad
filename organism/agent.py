@@ -97,7 +97,6 @@ class RadAgent:
             else:
                 yield response_text
             return
-        else:
             # Streaming branch
             generator, cost = await self.brain.think(messages, stream=True)
             await APICall.objects.acreate(prompt=f"Model: {self.brain.model} (Streaming)", pollen_cost=cost)
@@ -107,6 +106,9 @@ class RadAgent:
                 full_response += chunk
                 yield chunk
             
+            # Yield cost as metadata (using a special prefix)
+            yield f"__COST__:{cost}"
+
             tool_result = await self.handle_tools(full_response)
             if tool_result:
                 await ChatMessage.objects.acreate(role="system", content=tool_result)

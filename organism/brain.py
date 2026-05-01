@@ -81,7 +81,13 @@ class Brain:
                     resp.raise_for_status()
                     data = resp.json()
                     content = data['choices'][0]['message']['content']
-                    return content, model_cost
+                    usage = data.get('usage', {})
+                    tokens = {
+                        "prompt": usage.get('prompt_tokens', 0),
+                        "completion": usage.get('completion_tokens', 0),
+                        "total": usage.get('total_tokens', 0)
+                    }
+                    return content, model_cost, tokens
                 except Exception as e:
                     return f"ERROR: {str(e)}", 0
         else:
