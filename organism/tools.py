@@ -121,7 +121,10 @@ async def complete_task(task_id_or_title):
     return f"MISSION ACCOMPLISHED: '{task.title}' is complete! REWARD GRANTED. Proceed to self-hype protocol."
 
 async def delete_task(task_id_or_title):
-    """Permanently deletes a single task from the backlog."""
+    """
+    Permanently deletes a single task from the backlog.
+    Args: task_id_or_title (str)
+    """
     from .models import RadTask
     task = await RadTask.objects.filter(models.Q(id=task_id_or_title) | models.Q(title__icontains=task_id_or_title)).afirst()
     if not task:
@@ -131,20 +134,29 @@ async def delete_task(task_id_or_title):
     return f"MISSION PURGED: '{task_id_or_title}' has been permanently deleted from the backlog."
 
 async def delete_all_tasks():
-    """Permanently clears the entire task backlog."""
+    """
+    Permanently clears the entire task backlog.
+    Args: None
+    """
     from .models import RadTask
     count, _ = await RadTask.objects.all().adelete()
     return f"PURGE COMPLETE: All {count} missions have been permanently erased from the backlog."
 
 def switch_brain(model_id=None, brain=None):
-    """Allows Rad to autonomously switch his active AI model. Pass the model ID as 'model_id' or 'brain'."""
+    """
+    Allows Rad to autonomously switch his active AI model. 
+    Args: model_id (str)
+    """
     target = model_id or brain
     if not target:
         return "ERROR: No model specified."
     return f"BRAIN_SHIFT: {target}"
 
 async def save_to_vault(title, content, category="research", use_db=True):
-    """Saves research, blueprints, or milestones. Defaults to Database for better searchability."""
+    """
+    Saves research, blueprints, or milestones. Defaults to Database for better searchability.
+    Args: title (str), content (str), category (str), use_db (bool)
+    """
     from .models import RadLearning
     
     if use_db:
@@ -166,7 +178,10 @@ async def save_to_vault(title, content, category="research", use_db=True):
         return f"FILE ARCHIVED: '{filename}' saved to Vault filesystem."
 
 async def query_memory(query=None, category=None):
-    """Searches Rad's long-term database memories."""
+    """
+    Searches Rad's long-term database memories.
+    Args: query (str), category (str)
+    """
     from .models import RadLearning
     queryset = RadLearning.objects.all()
     if category:
@@ -181,7 +196,10 @@ async def query_memory(query=None, category=None):
     return "\n\n".join(results) if results else "No memories found matching your search."
 
 async def search_facts(query=None):
-    """Retrieves facts about Sawan from long-term memory. Use this when you need context about Sawan."""
+    """
+    Retrieves facts about Sawan from long-term memory. Use this when you need context about Sawan.
+    Args: query (str)
+    """
     from .models import SawanFact
     queryset = SawanFact.objects.all().order_by('-timestamp')
     if query:
@@ -194,7 +212,10 @@ async def search_facts(query=None):
     return "\n".join(results) if results else "No facts found in memory."
 
 async def remember(fact, context="Direct interaction"):
-    """Imprints a new fact or preference into Rad's long-term memory about Sawan or his environment."""
+    """
+    Imprints a new fact or preference into Rad's long-term memory about Sawan or his environment.
+    Args: fact (str), context (str)
+    """
     from .models import SawanFact
     await SawanFact.objects.acreate(fact=fact, context=context)
     return f"MEMORY IMPRINTED: I will never forget: '{fact}'"
