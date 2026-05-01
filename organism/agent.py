@@ -100,15 +100,21 @@ class RadAgent:
         else:
             # Streaming branch
             generator, cost = await self.brain.think(messages, stream=True)
-            await APICall.objects.acreate(prompt=f"Model: {self.brain.model} (Streaming)", pollen_cost=cost)
             
             full_response = ""
             async for chunk in generator:
                 full_response += chunk
                 yield chunk
             
-            # Yield cost as metadata (using a special prefix)
-            yield f"__COST__:{cost}"
+            # Estimate tokens (heuristic: ~4 chars per token)
+            prompt_text = str(messages)
+            in_tokens = len(prompt_text) // 4
+            out_tokens = len(full_response) // 4
+            
+            await APICall.objects.acreate(prompt=f"Model: {self.brain.model} (Streaming)", pollen_cost=cost)
+            
+            # Yield cost and tokens as metadata
+            yield f"__META__:{cost}|{in_tokens}|{out_tokens}"
 
             tool_result = await self.handle_tools(full_response)
             if tool_result:
