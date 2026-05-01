@@ -68,7 +68,7 @@ class RadSupervisor:
     def run(self):
         print("=== RAD MASTER SUPERVISOR STARTING ===")
         commands = {
-            "Django (UI)": [sys.executable, "manage.py", "runserver", "0.0.0.0:8000", "--noreload"],
+            "Django (UI)": [sys.executable, "manage.py", "runserver", "0.0.0.0:8000"],
             "Celery (Subconscious)": ["celery", "-A", "core", "worker", "-l", "info"]
         }
 
