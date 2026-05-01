@@ -119,6 +119,45 @@ async def list_tasks():
         res += f"{status_icon} [{t.priority.upper()}]{creator_tag} {t.title} - {t.status}{sched_tag}\n"
     return res
 
+async def update_task(task_id_or_title, title=None, priority=None, description=None, status=None, scheduled_for=None, created_by=None):
+    """
+    Updates an existing task's fields.
+    Args: task_id_or_title (str), title (str, optional), priority (str, optional), description (str, optional), status (str, optional), scheduled_for (str, optional), created_by (str, optional)
+    """
+    from .models import RadTask
+    from django.utils.dateparse import parse_datetime
+    from django.utils import timezone
+
+    task = await RadTask.objects.filter(models.Q(id=task_id_or_title) | models.Q(title__icontains=task_id_or_title)).afirst()
+    if not task:
+        return f"ERROR: Mission '{task_id_or_title}' not found."
+
+    changed = []
+    if title is not None:
+        task.title = title
+        changed.append("title")
+    if priority is not None:
+        task.priority = priority
+        changed.append("priority")
+    if description is not None:
+        task.description = description
+        changed.append("description")
+    if status is not None:
+        task.status = status
+        if status == 'done':
+            task.completed_at = timezone.now()
+            task.reward_earned = True
+        changed.append("status")
+    if scheduled_for is not None:
+        task.scheduled_for = parse_datetime(scheduled_for)
+        changed.append("scheduled_for")
+    if created_by is not None:
+        task.created_by = created_by
+        changed.append("created_by")
+
+    await task.asave()
+    return f"MISSION UPDATED: '{task.title}' fields modified: {', '.join(changed)}."
+
 async def complete_task(task_id_or_title):
     """
     Marks a task as completed and triggers achievement protocol.
