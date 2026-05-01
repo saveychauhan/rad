@@ -52,9 +52,23 @@ class RadConsumer(AsyncWebsocketConsumer):
         if message:
             await ChatMessage.objects.acreate(role="user", content=message)
             history = []
-            window_size = getattr(settings, 'RAD_CONTEXT_WINDOW', 10)
-            async for msg in ChatMessage.objects.all().order_by('-timestamp')[:window_size]:
-                history.append({"role": msg.role, "content": msg.content})
+            max_hist_chars = 12000
+            max_msg_chars = 3000
+            current_chars = 0
+            
+            async for msg in ChatMessage.objects.all().order_by('-timestamp'):
+                content = msg.content
+                if len(content) > max_msg_chars:
+                    content = content[:max_msg_chars] + "\n\n...[CONTENT TRUNCATED FOR MEMORY]..."
+                
+                if current_chars + len(content) > max_hist_chars:
+                    if not history: # Always include the very last message
+                        history.append({"role": msg.role, "content": content})
+                    break
+                    
+                history.append({"role": msg.role, "content": content})
+                current_chars += len(content)
+                
             history.reverse()
             memory = await self.agent.get_initial_messages()
             memory.extend(history)
