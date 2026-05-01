@@ -79,14 +79,29 @@ async def check_internet() -> bool:
 from organism.models import SawanFact, RadTask
 from django.utils import timezone
 
-async def add_task(title, priority="medium", description=""):
+async def add_task(title, priority="medium", description="", created_by="rad", scheduled_for=None):
     """
     Adds a new mission/task to Rad's backlog.
-    Args: title (str), priority (str), description (str)
+    Args: title (str), priority (str), description (str), created_by (str: 'sawan' or 'rad'), scheduled_for (str: YYYY-MM-DD HH:MM)
     """
     from .models import RadTask
-    task = await RadTask.objects.acreate(title=title, priority=priority, description=description)
-    return f"MISSION ACCEPTED: '{title}' has been added to the backlog with {priority} priority."
+    from django.utils.dateparse import parse_datetime
+    
+    dt = None
+    if scheduled_for:
+        dt = parse_datetime(scheduled_for)
+    
+    task = await RadTask.objects.acreate(
+        title=title, 
+        priority=priority, 
+        description=description,
+        created_by=created_by,
+        scheduled_for=dt
+    )
+    msg = f"MISSION ACCEPTED: '{title}' added (Creator: {created_by})"
+    if dt:
+        msg += f", scheduled for {scheduled_for}."
+    return msg
 
 async def list_tasks():
     """Lists all active and completed tasks."""
@@ -99,7 +114,9 @@ async def list_tasks():
     res = "--- RAD MISSION LOG ---\n"
     async for t in tasks:
         status_icon = "✅" if t.status == 'done' else ("⏳" if t.status == 'doing' else "📌")
-        res += f"{status_icon} [{t.priority.upper()}] {t.title} - {t.status}\n"
+        creator_tag = " [BY SAWAN]" if t.created_by == 'sawan' else ""
+        sched_tag = f" (Sched: {t.scheduled_for.strftime('%Y-%m-%d %H:%M')})" if t.scheduled_for else ""
+        res += f"{status_icon} [{t.priority.upper()}]{creator_tag} {t.title} - {t.status}{sched_tag}\n"
     return res
 
 async def complete_task(task_id_or_title):
