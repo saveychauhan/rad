@@ -62,7 +62,16 @@ class RadConsumer(AsyncWebsocketConsumer):
             current_model_before = self.agent.brain.model
             full_response = ""
             current_cost = 0.0
+            in_tokens = 0
+            out_tokens = 0
             async for chunk in self.agent.think(memory, stream=True):
+                if chunk.startswith("__META__:"):
+                    parts = chunk.split(":")[1].split("|")
+                    current_cost = float(parts[0])
+                    if len(parts) > 2:
+                        in_tokens = int(parts[1])
+                        out_tokens = int(parts[2])
+                    continue
                 if chunk.startswith("__COST__:"):
                     current_cost = float(chunk.split(":")[1])
                     continue
@@ -72,12 +81,14 @@ class RadConsumer(AsyncWebsocketConsumer):
             current_model_after = self.agent.brain.model
             await ChatMessage.objects.acreate(role="assistant", content=full_response)
             
-            # Send completion with cost
+            # Send completion with cost and tokens
             await self.send(text_data=json.dumps({
                 'type': 'message_complete', 
                 'role': 'rad', 
                 'content': full_response,
-                'cost': current_cost
+                'cost': current_cost,
+                'in_tokens': in_tokens,
+                'out_tokens': out_tokens
             }))
             if current_model_before != current_model_after:
                 await self.send(text_data=json.dumps({'type': 'brain_shift', 'model': current_model_after}))
