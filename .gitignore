@@ -17,3 +17,6 @@ media/
 
 # OS
 .DS_Store
+
+# Rad Internal
+.rad_busy
