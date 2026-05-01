@@ -7,7 +7,10 @@ from django.db import models
 from organism.sandbox import ensure_sandboxed
 
 async def read_file(path: str) -> str:
-    """Reads a file within the sandbox."""
+    """
+    Reads a file within the sandbox.
+    Args: path (str)
+    """
     print(f"[#] READING FILE: {path}")
     safe_path = ensure_sandboxed(path)
     if not os.path.exists(safe_path):
@@ -16,7 +19,10 @@ async def read_file(path: str) -> str:
         return f.read()
 
 async def write_file(path: str, content: str) -> str:
-    """Writes content to a file within the sandbox."""
+    """
+    Writes content to a file within the sandbox.
+    Args: path (str), content (str)
+    """
     print(f"[#] WRITING FILE: {path}")
     safe_path = ensure_sandboxed(path)
     os.makedirs(os.path.dirname(safe_path), exist_ok=True)
@@ -25,7 +31,10 @@ async def write_file(path: str, content: str) -> str:
     return f"Successfully wrote to {path}."
 
 async def execute_command(command: str) -> str:
-    """Executes a shell command within the project directory."""
+    """
+    Executes a shell command within the project directory.
+    Args: command (str)
+    """
     print(f"[#] EXECUTING COMMAND: {command}")
     # Note: This is powerful and should be used with caution even in a sandbox.
     try:
@@ -46,7 +55,10 @@ async def execute_command(command: str) -> str:
         return f"Error executing command: {str(e)}"
 
 async def list_dir(path: str = ".") -> str:
-    """Lists contents of a directory within the sandbox."""
+    """
+    Lists contents of a directory within the sandbox.
+    Args: path (str)
+    """
     safe_path = ensure_sandboxed(path)
     if not os.path.exists(safe_path):
         return f"Error: Path {path} does not exist."
@@ -68,7 +80,10 @@ from organism.models import SawanFact, RadTask
 from django.utils import timezone
 
 async def add_task(title, priority="medium", description=""):
-    """Adds a new mission/task to Rad's backlog."""
+    """
+    Adds a new mission/task to Rad's backlog.
+    Args: title (str), priority (str), description (str)
+    """
     from .models import RadTask
     task = await RadTask.objects.acreate(title=title, priority=priority, description=description)
     return f"MISSION ACCEPTED: '{title}' has been added to the backlog with {priority} priority."
@@ -88,7 +103,10 @@ async def list_tasks():
     return res
 
 async def complete_task(task_id_or_title):
-    """Marks a task as completed and triggers achievement protocol."""
+    """
+    Marks a task as completed and triggers achievement protocol.
+    Args: task_id_or_title (str)
+    """
     from .models import RadTask
     from django.utils import timezone
     task = await RadTask.objects.filter(models.Q(id=task_id_or_title) | models.Q(title__icontains=task_id_or_title)).afirst()
