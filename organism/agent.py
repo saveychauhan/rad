@@ -71,20 +71,28 @@ class RadAgent:
             yield f"ERROR: Low on Pollen energy ({used:.2f}/{self.pollen_limit}). Recharging..."
             return
 
+        if depth > 5:
+            yield "ERROR: Max neural recursion depth reached. Safety shutdown initiated."
+            return
+
         if not stream:
             response_text, cost, tokens = await self.brain.think(messages, stream=False)
             await APICall.objects.acreate(prompt=f"Model: {self.brain.model}", pollen_cost=cost)
             
+            # Yield the original thought
+            yield response_text
+
             tool_result = await self.handle_tools(response_text)
             if tool_result:
                 await ChatMessage.objects.acreate(role="system", content=tool_result)
+                # Yield the tool result so both user and model see it
+                yield f"\n\n[SYSTEM]: {tool_result}"
+                
                 messages.append({"role": "assistant", "content": response_text})
                 messages.append({"role": "system", "content": tool_result})
                 # Recursive call with depth tracking
                 async for chunk in self.think(messages, stream=False, depth=depth+1):
                     yield chunk
-            else:
-                yield response_text
             return
         else:
             # Streaming branch
@@ -95,14 +103,12 @@ class RadAgent:
                 full_response += chunk
                 yield chunk
             
-            # Estimate tokens (heuristic: ~4 chars per token)
+            # Estimate tokens
             prompt_text = str(messages)
             in_tokens = len(prompt_text) // 4
             out_tokens = len(full_response) // 4
             
             await APICall.objects.acreate(prompt=f"Model: {self.brain.model} (Streaming)", pollen_cost=cost)
-            
-            # Yield cost and tokens as metadata
             yield f"__META__:{cost}|{in_tokens}|{out_tokens}"
 
             tool_result = await self.handle_tools(full_response)
@@ -110,12 +116,10 @@ class RadAgent:
                 await ChatMessage.objects.acreate(role="system", content=tool_result)
                 yield f"\n\n[SYSTEM]: {tool_result}"
                 
-                # If a tool was called during a stream, we might need a follow-up thought
-                # We do this as a non-streaming recursive follow-up for stability
                 messages.append({"role": "assistant", "content": full_response})
                 messages.append({"role": "system", "content": tool_result})
                 async for follow_up in self.think(messages, stream=False, depth=depth+1):
-                    yield f"\n\n{follow_up}"
+                    yield follow_up
 
     async def handle_tools(self, response):
         """Detects and executes tool calls in the model's response using balanced brace matching."""
