@@ -147,7 +147,7 @@ class RadAgent:
                 args = tool_data.get("args", {})
                 
                 if tool_name in TOOL_MAP:
-                    print(f"\n[⚡ NEURAL TOOL CALL]: {tool_name}({args})")
+                    print(f"\n[⚡ NEURAL TOOL CALL]: {tool_name}({str(args)[:200]})")
                     func = TOOL_MAP[tool_name]
                     try:
                         if asyncio.iscoroutinefunction(func):
