@@ -88,31 +88,3 @@ def reset_chat(request):
 
 
 
-async def system_watch(request):
-    """
-    A Server-Sent Events (SSE) endpoint that notifies the frontend 
-    if Rad's soul or templates have changed.
-    Uses non-blocking sleep to be resource-light.
-    """
-    async def event_stream():
-        files_to_watch = [
-            os.path.join(settings.BASE_DIR, 'organism', 'soul.txt'),
-            os.path.join(settings.BASE_DIR, 'organism', 'templates', 'organism', 'chat.html'),
-            os.path.join(settings.BASE_DIR, 'organism', 'agent.py'),
-        ]
-        
-        last_mtimes = {f: os.path.getmtime(f) if os.path.exists(f) else 0 for f in files_to_watch}
-        
-        while True:
-            await asyncio.sleep(3600) # Check only once an hour to be ultra resource-light
-            for f in files_to_watch:
-                if os.path.exists(f):
-                    current_mtime = os.path.getmtime(f)
-                    if current_mtime > last_mtimes[f]:
-                        last_mtimes[f] = current_mtime
-                        yield f"data: refresh\n\n"
-            yield f"data: ping\n\n"
-
-    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
-    response['Cache-Control'] = 'no-cache'
-    return response
