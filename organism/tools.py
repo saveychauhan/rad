@@ -162,6 +162,19 @@ async def query_memory(query=None, category=None):
     
     return "\n\n".join(results) if results else "No memories found matching your search."
 
+async def search_facts(query=None):
+    """Retrieves facts about Sawan from long-term memory. Use this when you need context about Sawan."""
+    from .models import SawanFact
+    queryset = SawanFact.objects.all().order_by('-timestamp')
+    if query:
+        queryset = queryset.filter(models.Q(fact__icontains=query) | models.Q(context__icontains=query))
+    
+    results = []
+    async for item in queryset[:20]:
+        results.append(f"- {item.fact} (Context: {item.context})")
+    
+    return "\n".join(results) if results else "No facts found in memory."
+
 async def remember(fact, context="Direct interaction"):
     """Imprints a new fact or preference into Rad's long-term memory about Sawan or his environment."""
     from .models import SawanFact
@@ -242,6 +255,7 @@ TOOL_MAP = {
     "switch_brain": switch_brain,
     "save_to_vault": save_to_vault,
     "remember": remember,
+    "search_facts": search_facts,
     "query_memory": query_memory,
     "run_background_command": run_background_command,
     "search_web": search_web,
