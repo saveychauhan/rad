@@ -3,214 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rad | Real-Time Organism</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <title>RAD | Neural Dashboard</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Markdown & Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <style>
         :root {
-            --bg-color: #050a0f;
-            --panel-bg: rgba(10, 20, 30, 0.8);
-            --accent-color: #00d2ff;
-            --accent-glow: rgba(0, 210, 255, 0.3);
-            --text-primary: #e0f0ff;
-            --text-secondary: #80a0c0;
-            --user-bubble: rgba(0, 210, 255, 0.1);
-            --rad-bubble: rgba(255, 255, 255, 0.05);
-            --task-bg: rgba(0, 210, 255, 0.05);
+            --bg: #050505;
+            --panel: rgba(20, 20, 20, 0.7);
+            --accent: #00f2ff;
+            --accent-glow: rgba(0, 242, 255, 0.3);
+            --purple: #bc00ff;
+            --text: #e0e0e0;
+            --border: rgba(255, 255, 255, 0.1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
             overflow: hidden;
-            background-image: 
-                radial-gradient(circle at 50% 50%, rgba(0, 100, 255, 0.05) 0%, transparent 70%),
-                linear-gradient(rgba(0, 210, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 210, 255, 0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 30px 30px, 30px 30px;
+            background: radial-gradient(circle at top right, #1a0033 0%, #050505 50%);
         }
 
-        header {
-            padding: 20px 40px;
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            height: 100vh;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        /* --- CHAT SECTION --- */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            height: 100vh; /* Pin to screen height */
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(0, 210, 255, 0.1);
-            backdrop-filter: blur(10px);
-            z-index: 10;
+            flex-shrink: 0;
         }
-
-        .container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid rgba(0, 210, 255, 0.1);
-        }
-
-        .task-panel {
-            width: 300px;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(15px);
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            overflow-y: auto;
-        }
-
-        .panel-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--accent-color);
-            letter-spacing: 2px;
-            border-bottom: 1px solid var(--accent-color);
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-        }
-
-        .task-item {
-            background: var(--task-bg);
-            border: 1px solid rgba(0, 210, 255, 0.1);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .task-item.high { border-left: 3px solid #ff4444; }
-        .task-item.medium { border-left: 3px solid #ffaa00; }
-        .task-item.low { border-left: 3px solid #00ff88; }
-
-        .task-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .task-title { font-weight: 600; color: var(--text-primary); }
-        .task-status { font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: 0.7; }
 
         .logo {
             font-size: 24px;
             font-weight: 600;
-            color: var(--accent-color);
             letter-spacing: 4px;
+            color: var(--accent);
             text-shadow: 0 0 15px var(--accent-glow);
         }
 
-        /* Markdown Styles */
-        .message-content h1, .message-content h2, .message-content h3 {
-            color: var(--accent-color);
-            margin: 15px 0 10px 0;
-            font-weight: 600;
-        }
-        .message-content p { margin-bottom: 10px; }
-        .message-content ul, .message-content ol { margin: 10px 0 10px 20px; }
-        .message-content li { margin-bottom: 5px; }
-        .message-content code {
-            background: rgba(0, 210, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9em;
-            color: #fff;
-        }
-        .message-content pre {
-            background: #0d1117;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 210, 255, 0.2);
-            overflow-x: auto;
-            margin: 15px 0;
-        }
-        .message-content pre code {
-            background: transparent;
-            padding: 0;
-            color: #e6edf3;
-            display: block;
-        }
-        .message-content blockquote {
-            border-left: 4px solid var(--accent-color);
-            padding-left: 15px;
-            margin: 15px 0;
-            color: var(--text-secondary);
-            font-style: italic;
-        }
-
-        .status {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--text-secondary);
+        #status-indicator {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--accent);
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 8px;
         }
 
-        .model-select {
-            background: rgba(0, 210, 255, 0.05);
-            border: 1px solid rgba(0, 210, 255, 0.2);
-            color: var(--accent-color);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            padding: 5px 10px;
-            border-radius: 4px;
-            outline: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .model-select:hover {
-            border-color: var(--accent-color);
-            background: rgba(0, 210, 255, 0.1);
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        .status-dot {
+        .pulse {
             width: 8px;
             height: 8px;
-            background-color: #00ff88;
+            background: var(--accent);
             border-radius: 50%;
-            box-shadow: 0 0 8px #00ff88;
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px var(--accent);
+            animation: pulse-animation 2s infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        @keyframes pulse-animation {
+            0% { transform: scale(0.95); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0.95); opacity: 1; }
         }
 
-        main {
+        #chat-window {
             flex: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            max-width: 1000px;
-            margin: 0 auto;
-            width: 100%;
+            padding: 30px;
             overflow-y: auto;
-            gap: 20px;
-            scrollbar-width: thin;
+            scroll-behavior: smooth;
+            word-wrap: break-word;
         }
-
-        main::-webkit-scrollbar { width: 4px; }
-        main::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; }
 
         .message {
-            max-width: 80%;
-            padding: 15px 20px;
-            border-radius: 15px;
-            line-height: 1.6;
-            font-size: 16px;
-            position: relative;
-            animation: fadeIn 0.3s ease-out;
+            margin-bottom: 30px;
+            max-width: 85%;
+            animation: fadeIn 0.4s ease-out;
         }
 
         @keyframes fadeIn {
@@ -218,315 +115,324 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .user-message { align-self: flex-end; background: var(--user-bubble); border: 1px solid rgba(0, 210, 255, 0.2); border-bottom-right-radius: 2px; }
-        .rad-message { align-self: flex-start; background: var(--rad-bubble); border: 1px solid rgba(255, 255, 255, 0.1); border-bottom-left-radius: 2px; backdrop-filter: blur(5px); }
-
-        .message.is-proactive { border-color: #ffaa00; box-shadow: 0 0 10px rgba(255, 170, 0, 0.2); }
-        .message.is-proactive::before { content: 'RAD (SUBCONSCIOUS)'; color: #ffaa00; }
-
-        .rad-message::before {
-            content: 'RAD';
-            position: absolute;
-            top: -20px;
-            left: 0;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            color: var(--accent-color);
-            letter-spacing: 2px;
+        .user-message {
+            margin-left: auto;
+            text-align: right;
         }
 
-        .footer {
-            padding: 30px 40px;
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(0, 210, 255, 0.1);
+        .message-content {
+            padding: 15px 20px;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 15px;
         }
 
-        .input-container {
-            max-width: 920px;
-            margin: 0 auto;
-            display: flex;
-            gap: 15px;
-            background: var(--panel-bg);
-            padding: 10px 20px;
+        .rad-message .message-content {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            backdrop-filter: blur(5px);
+        }
+
+        .user-message .message-content {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            border: 1px solid var(--border);
+            display: inline-block;
+        }
+
+        /* --- MARKDOWN STYLING --- */
+        .message-content h1, .message-content h2 { color: var(--accent); margin: 15px 0 10px; font-size: 1.2em; }
+        .message-content code { font-family: 'Fira Code', monospace; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
+        .message-content pre { margin: 15px 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+        .message-content ul, .message-content ol { padding-left: 20px; margin: 10px 0; }
+
+        /* --- INPUT AREA --- */
+        .input-area {
+            padding: 20px 30px;
+            background: rgba(10, 10, 10, 0.95);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .input-wrapper {
+            background: var(--panel);
+            border: 1px solid var(--border);
             border-radius: 100px;
-            border: 1px solid rgba(0, 210, 255, 0.2);
+            padding: 10px 25px;
+            display: flex;
+            align-items: center;
+            transition: border 0.3s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        #user-input {
+            background: transparent;
+            border: none;
+            color: white;
+            flex: 1;
+            font-size: 16px;
+            outline: none;
+            padding: 10px 0;
+        }
+
+        /* --- SIDEBAR (MISSION CONTROL) --- */
+        .sidebar {
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--purple);
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .task-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .task-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
             transition: all 0.3s ease;
         }
 
-        input { flex: 1; background: transparent; border: none; color: var(--text-primary); font-family: 'Outfit', sans-serif; font-size: 16px; outline: none; }
-        button { background: transparent; border: none; color: var(--accent-color); cursor: pointer; font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 1px; }
+        .task-card:hover {
+            border-color: var(--purple);
+            transform: translateX(5px);
+        }
 
-        .typing-indicator { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-color); margin-bottom: 10px; display: none; }
+        .task-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
 
-        pre { background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px; margin: 10px 0; font-family: 'JetBrains Mono', monospace; font-size: 13px; overflow-x: auto; }
-        code { color: var(--accent-color); }
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #888;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        .badge-high { background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #ff4444; }
+        .badge-medium { background: rgba(255, 187, 51, 0.1); color: #ffbb33; border: 1px solid #ffbb33; }
+        .badge-done { background: rgba(0, 200, 81, 0.1); color: #00c851; border: 1px solid #00c851; }
+
+        /* --- SCROLLBAR --- */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <header>
-        <div class="logo">RAD</div>
-        <div class="status">
-            <select id="model-selector" class="model-select">
-                <option value="">SYNCING BRAINS...</option>
-            </select>
-            <div class="status-dot" id="ws-status"></div>
-            <span id="status-text">SYNCING...</span>
-        </div>
-    </header>
 
-    <div class="container">
-        <div class="chat-container">
-            <main id="chat-window">
-                {% for msg in history %}
-                    <div class="message {% if msg.role == 'user' %}user-message{% else %}rad-message{% endif %}">
-                        {{ msg.content|linebreaksbr }}
-                    </div>
-                {% empty %}
-                    <div class="message rad-message">Systems initialized. Awaiting strategy, Sawan.</div>
-                {% endfor %}
-            </main>
-
-            <div class="footer">
-                <div class="typing-indicator" id="typing">RAD is processing...</div>
-                <form class="input-container" id="chat-form">
-                    <input type="text" id="user-input" placeholder="Initiate communication..." autocomplete="off">
-                    <button type="submit">TRANSMIT</button>
-                </form>
+<div class="dashboard">
+    <!-- MAIN CHAT -->
+    <div class="chat-container">
+        <div class="header">
+            <div class="logo">RAD</div>
+            <div id="status-indicator">
+                <div class="pulse"></div>
+                <span id="status-text">NEURAL LINK ACTIVE</span>
             </div>
         </div>
 
-        <aside class="task-panel">
-            <div class="panel-title">MISSION CONTROL</div>
-            <div id="task-list">
-                <!-- Tasks will be injected here -->
-                <div class="task-item">
-                    <span class="task-status">INITIALIZING...</span>
+        <div id="chat-window">
+            {% for msg in history %}
+            <div class="message {{ msg.role }}-message">
+                <div class="message-content">{{ msg.content }}</div>
+            </div>
+            {% endfor %}
+            <div id="typing-indicator" style="display: none; margin-left: 40px; color: var(--accent); font-size: 12px; font-family: 'Fira Code';">
+                Rad is thinking...
+            </div>
+        </div>
+
+        <div class="input-area">
+            <form id="chat-form">
+                <div class="input-wrapper">
+                    <input type="text" id="user-input" placeholder="Initiate thought transfer..." autocomplete="off">
                 </div>
-            </div>
-        </aside>
+            </form>
+        </div>
     </div>
 
-    <script>
-        const chatWindow = document.getElementById('chat-window');
-        const chatForm = document.getElementById('chat-form');
-        const userInput = document.getElementById('user-input');
-        const typingIndicator = document.getElementById('typing');
-        const wsStatus = document.getElementById('ws-status');
-        const statusText = document.getElementById('status-text');
-        const modelSelector = document.getElementById('model-selector');
-        const taskList = document.getElementById('task-list');
+    <!-- MISSION CONTROL SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-title">Mission Control</div>
+        <div id="task-list" class="task-list">
+            <!-- Tasks injected here -->
+        </div>
 
-        async function loadTasks() {
-            try {
-                const response = await fetch('/missions/');
-                const data = await response.json();
-                taskList.innerHTML = '';
-                
-                data.tasks.forEach(task => {
-                    const item = document.createElement('div');
-                    item.className = `task-item ${task.priority}`;
-                    item.innerHTML = `
-                        <div class="task-header">
-                            <span class="task-title">${task.title}</span>
-                            <span class="task-status">${task.status.toUpperCase()}</span>
-                        </div>
-                    `;
-                    taskList.appendChild(item);
-                });
-            } catch (err) {
-                console.error('Failed to load tasks');
-            }
-        }
+        <div class="sidebar-title" style="margin-top: 40px; color: var(--accent);">Neural Shift</div>
+        <select id="model-selector" style="background: #111; color: var(--accent); border: 1px solid var(--accent); padding: 12px; border-radius: 8px; font-size: 11px; outline: none; width: 100%; box-shadow: 0 0 10px var(--accent-glow);">
+            <!-- Models injected here -->
+        </select>
+    </div>
+</div>
 
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
+<script>
+    const chatWindow = document.getElementById('chat-window');
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const taskList = document.getElementById('task-list');
+    const statusText = document.getElementById('status-text');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const modelSelector = document.getElementById('model-selector');
 
-        // Fetch available models
-        async function loadModels() {
-            try {
-                const response = await fetch('/models/');
-                const data = await response.json();
-                
-                modelSelector.innerHTML = '';
-                
-                // Add Anonymous option first
-                const anonOpt = document.createElement('option');
-                anonOpt.value = 'anonymous';
-                anonOpt.innerText = 'ANONYMOUS (FREE)';
-                modelSelector.appendChild(anonOpt);
+    let chatSocket = null;
+    let activeMessageDiv = null;
+    let activeContent = "";
 
-                data.models.forEach(model => {
-                    const opt = document.createElement('option');
-                    opt.value = model.id;
-                    const costInfo = model.cost ? ` [${model.cost}]` : '';
-                    opt.innerText = model.id.toUpperCase() + costInfo;
-                    if (model.id === data.current) opt.selected = true;
-                    modelSelector.appendChild(opt);
-                });
-            } catch (err) {
-                console.error('Failed to load models');
-            }
-        }
-
-        modelSelector.onchange = async () => {
-            const selectedModel = modelSelector.value;
-            statusText.innerText = 'SWITCHING BRAIN...';
-            
-            try {
-                await fetch('/set_model/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: JSON.stringify({ model: selectedModel })
-                });
-                statusText.innerText = 'LINK ESTABLISHED';
-                appendMessage('rad', `<i>Neural shift complete. I am now utilizing the ${selectedModel} brain.</i>`);
-            } catch (err) {
-                statusText.innerText = 'SHIFT FAILED';
-            }
-        };
-
-        loadModels();
-        loadTasks();
-
-        // WebSocket Setup
-        const chatSocket = new WebSocket(
-            (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
-            window.location.host + '/ws/rad/'
-        );
-
-        chatSocket.onopen = () => {
-            wsStatus.style.backgroundColor = '#00ff88';
-            wsStatus.style.boxShadow = '0 0 8px #00ff88';
-            statusText.innerText = 'LINK ESTABLISHED';
-        };
-
-        chatSocket.onclose = () => {
-            wsStatus.style.backgroundColor = '#ff4444';
-            wsStatus.style.boxShadow = '0 0 8px #ff4444';
-            statusText.innerText = 'LINK SEVERED';
-        };
-
-        let activeMessageDiv = null;
-        let activeContent = "";
+    function connect() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        chatSocket = new WebSocket(`${protocol}//${window.location.host}/ws/rad/`);
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
             
             if (data.type === 'status') {
                 statusText.innerText = data.content.toUpperCase();
-                if (data.content.includes('thinking')) {
-                    typingIndicator.style.display = 'block';
-                }
+                typingIndicator.style.display = data.content.includes('thinking') ? 'block' : 'none';
             } else if (data.type === 'chunk') {
                 typingIndicator.style.display = 'none';
-                
                 if (!activeMessageDiv) {
-                    activeMessageDiv = document.createElement('div');
-                    activeMessageDiv.className = `message ${data.role}-message`;
-                    const contentDiv = document.createElement('div');
-                    contentDiv.className = 'message-content';
-                    activeMessageDiv.appendChild(contentDiv);
-                    chatWindow.appendChild(activeMessageDiv);
+                    activeMessageDiv = createMessageDiv('rad');
                 }
-                
                 activeContent += data.content;
                 const contentDiv = activeMessageDiv.querySelector('.message-content');
-                contentDiv.innerHTML = marked.parse(activeContent);
+                contentDiv.innerHTML = parseMarkdown(activeContent);
+                Prism.highlightAllUnder(contentDiv);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
-
             } else if (data.type === 'message_complete') {
                 activeMessageDiv = null;
                 activeContent = "";
                 loadTasks();
-            } else if (data.type === 'message') {
-                typingIndicator.style.display = 'none';
-                appendMessage(data.role, data.content, data.is_proactive);
+            } else if (data.type === 'rad_broadcast') {
+                appendMessage('rad', data.content);
                 loadTasks();
-                
-                // Trigger refresh if needed
-                if (data.content.includes('[REFRESH]') || data.content.includes('[UPGRADE]')) {
-                    setTimeout(() => location.reload(), 2000);
-                }
+            } else if (data.type === 'task_update_event') {
+                loadTasks();
             } else if (data.type === 'brain_shift') {
-                console.log('BRAIN_SHIFT SIGNAL RECEIVED:', data.model);
-                // Update the model selector in real-time (case-insensitive)
-                const targetModel = data.model.toLowerCase();
-                let found = false;
-                for (let i = 0; i < modelSelector.options.length; i++) {
-                    if (modelSelector.options[i].value.toLowerCase() === targetModel) {
-                        modelSelector.selectedIndex = i;
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if (found) {
-                    statusText.innerText = 'BRAIN SHIFTED';
-                    statusText.style.color = '#00ff88';
-                    setTimeout(() => {
-                        statusText.innerText = 'LINK ESTABLISHED';
-                        statusText.style.color = '';
-                    }, 4000);
-                }
-            } else if (data.type === 'task_update') {
-                loadTasks();
+                modelSelector.value = data.model;
             }
         };
 
-        function json_parse(str) {
-            try { return JSON.parse(str); } catch (e) { return {}; }
-        }
-
-        function appendMessage(role, content, isProactive = false) {
-            const div = document.createElement('div');
-            div.className = `message ${role}-message`;
-            if (isProactive) div.classList.add('proactive');
-            
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.innerHTML = marked.parse(content);
-            
-            div.appendChild(contentDiv);
-            chatWindow.appendChild(div);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-        }
-
-        // Parse existing messages on load
-        document.querySelectorAll('.message').forEach(msg => {
-            const content = msg.innerText;
-            msg.innerHTML = `<div class="message-content">${marked.parse(content)}</div>`;
-        });
-
-        chatForm.onsubmit = (e) => {
-            e.preventDefault();
-            const message = userInput.value.trim();
-            if (!message || chatSocket.readyState !== WebSocket.OPEN) return;
-
-            appendMessage('user', message);
-            chatSocket.send(JSON.stringify({ 'message': message }));
-            userInput.value = '';
-            typingIndicator.style.display = 'block';
+        chatSocket.onclose = function(e) {
+            statusText.innerText = "LINK LOST. RECONNECTING...";
+            setTimeout(connect, 2000);
         };
+    }
 
-        // Automatic scroll to bottom on load
+    function parseMarkdown(content) {
+        try {
+            return marked.parse(content);
+        } catch (e) {
+            console.error("Markdown parse error", e);
+            return content.replace(/\n/g, '<br>'); // Simple fallback
+        }
+    }
+
+    function createMessageDiv(role) {
+        const div = document.createElement('div');
+        div.className = `message ${role}-message`;
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        div.appendChild(contentDiv);
+        chatWindow.appendChild(div);
+        return div;
+    }
+
+    function appendMessage(role, content) {
+        const div = createMessageDiv(role);
+        div.querySelector('.message-content').innerHTML = parseMarkdown(content);
+        Prism.highlightAllUnder(div);
         chatWindow.scrollTop = chatWindow.scrollHeight;
-    </script>
+    }
+
+    chatForm.onsubmit = (e) => {
+        e.preventDefault();
+        const text = userInput.value.trim();
+        if (!text) return;
+        appendMessage('user', text);
+        chatSocket.send(JSON.stringify({ 'message': text }));
+        userInput.value = '';
+    };
+
+    async function loadTasks() {
+        try {
+            const resp = await fetch('/get_tasks/');
+            const data = await resp.json();
+            if (data.tasks) {
+                taskList.innerHTML = data.tasks.map(t => `
+                    <div class="task-card">
+                        <div class="task-title">${t.title}</div>
+                        <div class="task-meta">
+                            <span class="badge badge-${t.priority}">${t.priority}</span>
+                            <span class="badge badge-${t.status}">${t.status}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (e) { console.error("Task load failed", e); }
+    }
+
+    async function loadModels() {
+        try {
+            const resp = await fetch('/get_models/');
+            const data = await resp.json();
+            if (data.models) {
+                modelSelector.innerHTML = data.models.map(m => `
+                    <option value="${m.id}" ${m.id === data.current ? 'selected' : ''}>
+                        ${m.id.toUpperCase()} (${m.cost}P)
+                    </option>
+                `).join('');
+            }
+        } catch (e) { console.error("Model load failed", e); }
+    }
+
+    modelSelector.onchange = async () => {
+        await fetch('/set_model/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({model: modelSelector.value})
+        });
+    };
+
+    // Initial load
+    document.querySelectorAll('.message-content').forEach(el => {
+        el.innerHTML = parseMarkdown(el.textContent || el.innerText);
+        Prism.highlightAllUnder(el);
+    });
+
+    connect();
+    loadTasks();
+    loadModels();
+</script>
+
 </body>
 </html>

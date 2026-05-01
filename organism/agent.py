@@ -147,11 +147,17 @@ class RadAgent:
                 args = tool_data.get("args", {})
                 
                 if tool_name in TOOL_MAP:
+                    print(f"\n[⚡ NEURAL TOOL CALL]: {tool_name}({args})")
                     func = TOOL_MAP[tool_name]
-                    if asyncio.iscoroutinefunction(func):
-                        result = await func(**args)
-                    else:
-                        result = func(**args)
+                    try:
+                        if asyncio.iscoroutinefunction(func):
+                            result = await func(**args)
+                        else:
+                            result = func(**args)
+                        print(f"[✅ TOOL RESULT]: {str(result)[:200]}...")
+                    except Exception as e:
+                        result = f"ERROR executing tool {tool_name}: {str(e)}"
+                        print(f"[❌ TOOL ERROR]: {result}")
                     
                     # Special handling for BRAIN_SHIFT
                     if isinstance(result, str) and result.startswith("BRAIN_SHIFT: "):

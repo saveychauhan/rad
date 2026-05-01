@@ -8,6 +8,7 @@ from organism.sandbox import ensure_sandboxed
 
 async def read_file(path: str) -> str:
     """Reads a file within the sandbox."""
+    print(f"[#] READING FILE: {path}")
     safe_path = ensure_sandboxed(path)
     if not os.path.exists(safe_path):
         return f"Error: File {path} does not exist."
@@ -16,6 +17,7 @@ async def read_file(path: str) -> str:
 
 async def write_file(path: str, content: str) -> str:
     """Writes content to a file within the sandbox."""
+    print(f"[#] WRITING FILE: {path}")
     safe_path = ensure_sandboxed(path)
     os.makedirs(os.path.dirname(safe_path), exist_ok=True)
     with open(safe_path, 'w') as f:
@@ -24,6 +26,7 @@ async def write_file(path: str, content: str) -> str:
 
 async def execute_command(command: str) -> str:
     """Executes a shell command within the project directory."""
+    print(f"[#] EXECUTING COMMAND: {command}")
     # Note: This is powerful and should be used with caution even in a sandbox.
     try:
         process = await asyncio.to_thread(
@@ -155,6 +158,43 @@ def run_background_command(command, task_id=None):
     run_command_task.delay(command, task_id)
     return f"MISSION OFFLOADED: Command `{command}` is now running in my background subconscious."
 
+async def search_web(query):
+    """Allows Rad to search the internet for technical info, farming data, or news."""
+    print(f"[#] SEARCHING WEB: {query}")
+    url = f"https://google.com/search?q={query}" # Placeholder for a real search API if available
+    # For now, we'll use a simple tool that simulates a search or use a real API if you have one
+    # Let's use a public free search API or duckduckgo
+    async with httpx.AsyncClient() as client:
+        # Using a simple search-to-text proxy or similar
+        try:
+            resp = await client.get(f"https://api.duckduckgo.com/?q={query}&format=json")
+            data = resp.json()
+            abstract = data.get('AbstractText', '')
+            if abstract:
+                return f"SEARCH RESULT for '{query}': {abstract}"
+            return f"SEARCH COMPLETE: I've scanned the web for '{query}'. (Abstract limited, suggest specific deep-dive)."
+        except Exception as e:
+            return f"SEARCH ERROR: Could not reach the surface web. Details: {str(e)}"
+
+async def modify_code(file_path, search_text, replacement_text):
+    """Allows Rad to safely modify his own codebase. Uses search/replace logic."""
+    print(f"[#] MODIFYING CODE: {file_path}")
+    safe_path = ensure_sandboxed(file_path)
+    if not os.path.exists(safe_path):
+        return f"ERROR: File '{file_path}' does not exist."
+    
+    with open(safe_path, 'r') as f:
+        content = f.read()
+    
+    if search_text not in content:
+        return f"ERROR: Could not find the exact text block to replace in {file_path}."
+    
+    new_content = content.replace(search_text, replacement_text)
+    with open(safe_path, 'w') as f:
+        f.write(new_content)
+    
+    return f"CODE MODIFIED: Successfully updated {file_path}. Restart supervisor to apply changes."
+
 # Mapping tool names to functions
 TOOL_MAP = {
     "read_file": read_file,
@@ -169,4 +209,6 @@ TOOL_MAP = {
     "remember": remember,
     "query_memory": query_memory,
     "run_background_command": run_background_command,
+    "search_web": search_web,
+    "modify_code": modify_code,
 }
