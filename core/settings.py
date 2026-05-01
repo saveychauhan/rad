@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'organism',
     'channels',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
