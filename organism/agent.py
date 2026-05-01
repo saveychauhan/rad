@@ -49,15 +49,20 @@ class RadAgent:
         
         messages = [{"role": "system", "content": system_content}]
         
-        # Load memories from SawanFact
+        # Load memories from SawanFact (Smart Memory Limit)
         facts = ""
-        async for fact_obj in SawanFact.objects.all():
-            facts += f"- {fact_obj.fact}\n"
+        max_fact_chars = 3000
+        async for fact_obj in SawanFact.objects.all().order_by('-timestamp'):
+            next_fact = f"- {fact_obj.fact}\n"
+            if len(facts) + len(next_fact) > max_fact_chars:
+                facts += "- ...[OLDER FACTS TRUNCATED FOR MEMORY]...\n"
+                break
+            facts += next_fact
         
         if facts:
             messages.append({
                 "role": "system",
-                "content": f"Here are things you have learned and remembered about your creator Sawan:\n{facts}"
+                "content": f"Here are the most recent facts you have learned about your creator Sawan:\n{facts}"
             })
         return messages
 
