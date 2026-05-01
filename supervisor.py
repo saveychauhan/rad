@@ -52,6 +52,19 @@ class RadSupervisor:
             time.sleep(1.5)
             current = self.snapshot_codebase()
             if current != self.last_checksums:
+                # 🛡️ PROTECTIVE LOCK: Wait if Rad is still talking
+                while os.path.exists('.rad_busy'):
+                    # Check if the lock is stale (older than 2 mins)
+                    try:
+                        if time.time() - os.path.getmtime('.rad_busy') > 120:
+                            print("[⚠️] AI busy lock looks stale. Breaking lock...")
+                            os.remove('.rad_busy')
+                            break
+                    except: pass
+                    
+                    print("[⏳] Rad is busy communicating. Holding mutation reload...")
+                    time.sleep(3)
+
                 print("\n[🧬 MUTATION DETECTED] Auto-committing and rebooting neural processes...")
                 self.auto_commit()
                 self.reload_flag = True
