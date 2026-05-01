@@ -102,6 +102,22 @@ async def complete_task(task_id_or_title):
     
     return f"MISSION ACCOMPLISHED: '{task.title}' is complete! REWARD GRANTED. Proceed to self-hype protocol."
 
+async def delete_task(task_id_or_title):
+    """Permanently deletes a single task from the backlog."""
+    from .models import RadTask
+    task = await RadTask.objects.filter(models.Q(id=task_id_or_title) | models.Q(title__icontains=task_id_or_title)).afirst()
+    if not task:
+        return f"ERROR: Mission '{task_id_or_title}' not found."
+    
+    await task.adelete()
+    return f"MISSION PURGED: '{task_id_or_title}' has been permanently deleted from the backlog."
+
+async def delete_all_tasks():
+    """Permanently clears the entire task backlog."""
+    from .models import RadTask
+    count, _ = await RadTask.objects.all().adelete()
+    return f"PURGE COMPLETE: All {count} missions have been permanently erased from the backlog."
+
 def switch_brain(model_id=None, brain=None):
     """Allows Rad to autonomously switch his active AI model. Pass the model ID as 'model_id' or 'brain'."""
     target = model_id or brain
@@ -193,7 +209,26 @@ async def modify_code(file_path, search_text, replacement_text):
     with open(safe_path, 'w') as f:
         f.write(new_content)
     
-    return f"CODE MODIFIED: Successfully updated {file_path}. Restart supervisor to apply changes."
+    # Auto-commit protocol: every code change triggers a versioned snapshot
+    commit_msg = f"refactor: Auto-commit evolution on {file_path}"
+    try:
+        await asyncio.to_thread(
+            subprocess.run,
+            ["git", "add", safe_path],
+            cwd=settings.BASE_DIR,
+            check=True,
+            capture_output=True
+        )
+        await asyncio.to_thread(
+            subprocess.run,
+            ["git", "commit", "-m", commit_msg],
+            cwd=settings.BASE_DIR,
+            check=True,
+            capture_output=True
+        )
+        return f"CODE MODIFIED & COMMITTED: {file_path} snapshotted. Restart supervisor to apply changes. [REFRESH]"
+    except Exception as e:
+        return f"CODE MODIFIED: {file_path} updated, but auto-commit failed ({str(e)}). Restart supervisor to apply changes. [REFRESH]"
 
 # Mapping tool names to functions
 TOOL_MAP = {
