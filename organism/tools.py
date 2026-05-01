@@ -205,8 +205,11 @@ async def search_web(query):
         except Exception as e:
             return f"SEARCH ERROR: Could not reach the surface web. Details: {str(e)}"
 
-async def modify_code(file_path, search_text, replacement_text):
-    """Allows Rad to safely modify his own codebase. Uses search/replace logic."""
+async def modify_code(file_path, search, replace):
+    """
+    Safely modify the codebase using exact string replacement.
+    Required args: file_path (str), search (str), replace (str)
+    """
     print(f"[#] MODIFYING CODE: {file_path}")
     safe_path = ensure_sandboxed(file_path)
     if not os.path.exists(safe_path):
@@ -215,10 +218,10 @@ async def modify_code(file_path, search_text, replacement_text):
     with open(safe_path, 'r') as f:
         content = f.read()
     
-    if search_text not in content:
+    if search not in content:
         return f"ERROR: Could not find the exact text block to replace in {file_path}."
     
-    new_content = content.replace(search_text, replacement_text)
+    new_content = content.replace(search, replace)
     with open(safe_path, 'w') as f:
         f.write(new_content)
     
