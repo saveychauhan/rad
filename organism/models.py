@@ -39,10 +39,16 @@ class RadTask(models.Model):
         ('doing', 'In Progress'),
         ('done', 'Completed'),
     ]
+    CREATOR_CHOICES = [
+        ('sawan', 'Sawan (Creator)'),
+        ('rad', 'Rad (Organism)'),
+    ]
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='todo')
+    created_by = models.CharField(max_length=10, choices=CREATOR_CHOICES, default='rad')
+    scheduled_for = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     reward_earned = models.BooleanField(default=False)
