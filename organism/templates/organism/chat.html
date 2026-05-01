@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rad | Real-Time Organism</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050a0f;
+            --panel-bg: rgba(10, 20, 30, 0.8);
+            --accent-color: #00d2ff;
+            --accent-glow: rgba(0, 210, 255, 0.3);
+            --text-primary: #e0f0ff;
+            --text-secondary: #80a0c0;
+            --user-bubble: rgba(0, 210, 255, 0.1);
+            --rad-bubble: rgba(255, 255, 255, 0.05);
+            --task-bg: rgba(0, 210, 255, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 100, 255, 0.05) 0%, transparent 70%),
+                linear-gradient(rgba(0, 210, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 210, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+
+        header {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 210, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(0, 210, 255, 0.1);
+        }
+
+        .task-panel {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--accent-color);
+            letter-spacing: 2px;
+            border-bottom: 1px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .task-item {
+            background: var(--task-bg);
+            border: 1px solid rgba(0, 210, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .task-item.high { border-left: 3px solid #ff4444; }
+        .task-item.medium { border-left: 3px solid #ffaa00; }
+        .task-item.low { border-left: 3px solid #00ff88; }
+
+        .task-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .task-title { font-weight: 600; color: var(--text-primary); }
+        .task-status { font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: 0.7; }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-color);
+            letter-spacing: 4px;
+            text-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* Markdown Styles */
+        .message-content h1, .message-content h2, .message-content h3 {
+            color: var(--accent-color);
+            margin: 15px 0 10px 0;
+            font-weight: 600;
+        }
+        .message-content p { margin-bottom: 10px; }
+        .message-content ul, .message-content ol { margin: 10px 0 10px 20px; }
+        .message-content li { margin-bottom: 5px; }
+        .message-content code {
+            background: rgba(0, 210, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            color: #fff;
+        }
+        .message-content pre {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .message-content pre code {
+            background: transparent;
+            padding: 0;
+            color: #e6edf3;
+            display: block;
+        }
+        .message-content blockquote {
+            border-left: 4px solid var(--accent-color);
+            padding-left: 15px;
+            margin: 15px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .model-select {
+            background: rgba(0, 210, 255, 0.05);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            color: var(--accent-color);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .model-select:hover {
+            border-color: var(--accent-color);
+            background: rgba(0, 210, 255, 0.1);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #00ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00ff88;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        main {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-y: auto;
+            gap: 20px;
+            scrollbar-width: thin;
+        }
+
+        main::-webkit-scrollbar { width: 4px; }
+        main::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; }
+
+        .message {
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            line-height: 1.6;
+            font-size: 16px;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message { align-self: flex-end; background: var(--user-bubble); border: 1px solid rgba(0, 210, 255, 0.2); border-bottom-right-radius: 2px; }
+        .rad-message { align-self: flex-start; background: var(--rad-bubble); border: 1px solid rgba(255, 255, 255, 0.1); border-bottom-left-radius: 2px; backdrop-filter: blur(5px); }
+
+        .message.is-proactive { border-color: #ffaa00; box-shadow: 0 0 10px rgba(255, 170, 0, 0.2); }
+        .message.is-proactive::before { content: 'RAD (SUBCONSCIOUS)'; color: #ffaa00; }
+
+        .rad-message::before {
+            content: 'RAD';
+            position: absolute;
+            top: -20px;
+            left: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--accent-color);
+            letter-spacing: 2px;
+        }
+
+        .footer {
+            padding: 30px 40px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 210, 255, 0.1);
+        }
+
+        .input-container {
+            max-width: 920px;
+            margin: 0 auto;
+            display: flex;
+            gap: 15px;
+            background: var(--panel-bg);
+            padding: 10px 20px;
+            border-radius: 100px;
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        input { flex: 1; background: transparent; border: none; color: var(--text-primary); font-family: 'Outfit', sans-serif; font-size: 16px; outline: none; }
+        button { background: transparent; border: none; color: var(--accent-color); cursor: pointer; font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 1px; }
+
+        .typing-indicator { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-color); margin-bottom: 10px; display: none; }
+
+        pre { background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px; margin: 10px 0; font-family: 'JetBrains Mono', monospace; font-size: 13px; overflow-x: auto; }
+        code { color: var(--accent-color); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">RAD</div>
+        <div class="status">
+            <select id="model-selector" class="model-select">
+                <option value="">SYNCING BRAINS...</option>
+            </select>
+            <div class="status-dot" id="ws-status"></div>
+            <span id="status-text">SYNCING...</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="chat-container">
+            <main id="chat-window">
+                {% for msg in history %}
+                    <div class="message {% if msg.role == 'user' %}user-message{% else %}rad-message{% endif %}">
+                        {{ msg.content|linebreaksbr }}
+                    </div>
+                {% empty %}
+                    <div class="message rad-message">Systems initialized. Awaiting strategy, Sawan.</div>
+                {% endfor %}
+            </main>
+
+            <div class="footer">
+                <div class="typing-indicator" id="typing">RAD is processing...</div>
+                <form class="input-container" id="chat-form">
+                    <input type="text" id="user-input" placeholder="Initiate communication..." autocomplete="off">
+                    <button type="submit">TRANSMIT</button>
+                </form>
+            </div>
+        </div>
+
+        <aside class="task-panel">
+            <div class="panel-title">MISSION CONTROL</div>
+            <div id="task-list">
+                <!-- Tasks will be injected here -->
+                <div class="task-item">
+                    <span class="task-status">INITIALIZING...</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const typingIndicator = document.getElementById('typing');
+        const wsStatus = document.getElementById('ws-status');
+        const statusText = document.getElementById('status-text');
+        const modelSelector = document.getElementById('model-selector');
+        const taskList = document.getElementById('task-list');
+
+        async function loadTasks() {
+            try {
+                const response = await fetch('/missions/');
+                const data = await response.json();
+                taskList.innerHTML = '';
+                
+                data.tasks.forEach(task => {
+                    const item = document.createElement('div');
+                    item.className = `task-item ${task.priority}`;
+                    item.innerHTML = `
+                        <div class="task-header">
+                            <span class="task-title">${task.title}</span>
+                            <span class="task-status">${task.status.toUpperCase()}</span>
+                        </div>
+                    `;
+                    taskList.appendChild(item);
+                });
+            } catch (err) {
+                console.error('Failed to load tasks');
+            }
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Fetch available models
+        async function loadModels() {
+            try {
+                const response = await fetch('/models/');
+                const data = await response.json();
+                
+                modelSelector.innerHTML = '';
+                
+                // Add Anonymous option first
+                const anonOpt = document.createElement('option');
+                anonOpt.value = 'anonymous';
+                anonOpt.innerText = 'ANONYMOUS (FREE)';
+                modelSelector.appendChild(anonOpt);
+
+                data.models.forEach(model => {
+                    const opt = document.createElement('option');
+                    opt.value = model.id;
+                    const costInfo = model.cost ? ` [${model.cost}]` : '';
+                    opt.innerText = model.id.toUpperCase() + costInfo;
+                    if (model.id === data.current) opt.selected = true;
+                    modelSelector.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Failed to load models');
+            }
+        }
+
+        modelSelector.onchange = async () => {
+            const selectedModel = modelSelector.value;
+            statusText.innerText = 'SWITCHING BRAIN...';
+            
+            try {
+                await fetch('/set_model/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ model: selectedModel })
+                });
+                statusText.innerText = 'LINK ESTABLISHED';
+                appendMessage('rad', `<i>Neural shift complete. I am now utilizing the ${selectedModel} brain.</i>`);
+            } catch (err) {
+                statusText.innerText = 'SHIFT FAILED';
+            }
+        };
+
+        loadModels();
+        loadTasks();
+
+        // WebSocket Setup
+        const chatSocket = new WebSocket(
+            (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
+            window.location.host + '/ws/rad/'
+        );
+
+        chatSocket.onopen = () => {
+            wsStatus.style.backgroundColor = '#00ff88';
+            wsStatus.style.boxShadow = '0 0 8px #00ff88';
+            statusText.innerText = 'LINK ESTABLISHED';
+        };
+
+        chatSocket.onclose = () => {
+            wsStatus.style.backgroundColor = '#ff4444';
+            wsStatus.style.boxShadow = '0 0 8px #ff4444';
+            statusText.innerText = 'LINK SEVERED';
+        };
+
+        let activeMessageDiv = null;
+        let activeContent = "";
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            if (data.type === 'status') {
+                statusText.innerText = data.content.toUpperCase();
+                if (data.content.includes('thinking')) {
+                    typingIndicator.style.display = 'block';
+                }
+            } else if (data.type === 'chunk') {
+                typingIndicator.style.display = 'none';
+                
+                if (!activeMessageDiv) {
+                    activeMessageDiv = document.createElement('div');
+                    activeMessageDiv.className = `message ${data.role}-message`;
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'message-content';
+                    activeMessageDiv.appendChild(contentDiv);
+                    chatWindow.appendChild(activeMessageDiv);
+                }
+                
+                activeContent += data.content;
+                const contentDiv = activeMessageDiv.querySelector('.message-content');
+                contentDiv.innerHTML = marked.parse(activeContent);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            } else if (data.type === 'message_complete') {
+                activeMessageDiv = null;
+                activeContent = "";
+                loadTasks();
+            } else if (data.type === 'message') {
+                typingIndicator.style.display = 'none';
+                appendMessage(data.role, data.content, data.is_proactive);
+                loadTasks();
+                
+                // Trigger refresh if needed
+                if (data.content.includes('[REFRESH]') || data.content.includes('[UPGRADE]')) {
+                    setTimeout(() => location.reload(), 2000);
+                }
+            } else if (data.type === 'brain_shift') {
+                console.log('BRAIN_SHIFT SIGNAL RECEIVED:', data.model);
+                // Update the model selector in real-time (case-insensitive)
+                const targetModel = data.model.toLowerCase();
+                let found = false;
+                for (let i = 0; i < modelSelector.options.length; i++) {
+                    if (modelSelector.options[i].value.toLowerCase() === targetModel) {
+                        modelSelector.selectedIndex = i;
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (found) {
+                    statusText.innerText = 'BRAIN SHIFTED';
+                    statusText.style.color = '#00ff88';
+                    setTimeout(() => {
+                        statusText.innerText = 'LINK ESTABLISHED';
+                        statusText.style.color = '';
+                    }, 4000);
+                }
+            } else if (data.type === 'task_update') {
+                loadTasks();
+            }
+        };
+
+        function json_parse(str) {
+            try { return JSON.parse(str); } catch (e) { return {}; }
+        }
+
+        function appendMessage(role, content, isProactive = false) {
+            const div = document.createElement('div');
+            div.className = `message ${role}-message`;
+            if (isProactive) div.classList.add('proactive');
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = marked.parse(content);
+            
+            div.appendChild(contentDiv);
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Parse existing messages on load
+        document.querySelectorAll('.message').forEach(msg => {
+            const content = msg.innerText;
+            msg.innerHTML = `<div class="message-content">${marked.parse(content)}</div>`;
+        });
+
+        chatForm.onsubmit = (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (!message || chatSocket.readyState !== WebSocket.OPEN) return;
+
+            appendMessage('user', message);
+            chatSocket.send(JSON.stringify({ 'message': message }));
+            userInput.value = '';
+            typingIndicator.style.display = 'block';
+        };
+
+        // Automatic scroll to bottom on load
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    </script>
+</body>
+</html>

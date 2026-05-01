@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'organism',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -67,7 +69,13 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 # Database
@@ -85,8 +93,10 @@ DATABASES = {
 }
 
 # Pollinations AI Configuration
-POLLINATIONS_API_KEY = '' # Add your key here if required
-POLLINATIONS_MODEL = 'openai'
+POLLINATIONS_API_KEY = 'sk_N37eTJUmOulHUt3y3iDsCTI8APxGdCPV' # Add your key here if required
+POLLINATIONS_MODEL = 'kimi-k2.6'
+RAD_CONTEXT_WINDOW = 10 # Number of recent messages to keep in active context
+RAD_POLLEN_LIMIT = 10.0 # Hourly energy budget for Rad's thoughts
 
 
 # Password validation
@@ -129,3 +139,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
