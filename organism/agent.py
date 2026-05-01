@@ -97,6 +97,7 @@ class RadAgent:
             else:
                 yield response_text
             return
+        else:
             # Streaming branch
             generator, cost = await self.brain.think(messages, stream=True)
             await APICall.objects.acreate(prompt=f"Model: {self.brain.model} (Streaming)", pollen_cost=cost)
