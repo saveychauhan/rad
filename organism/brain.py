@@ -89,7 +89,7 @@ class Brain:
                     }
                     return content, model_cost, tokens
                 except Exception as e:
-                    return f"ERROR: {str(e)}", 0
+                    return f"ERROR: {str(e)}", 0, {}
         else:
             # For streaming, we return an async generator
             async def stream_generator():
