@@ -408,13 +408,23 @@
             40% { transform: scale(1); }
         }
 
-        /* --- SIDEBAR --- */
         .sidebar {
             background: linear-gradient(180deg, rgba(8,8,14,0.95) 0%, rgba(5,5,8,0.9) 100%);
             backdrop-filter: blur(30px);
             border-left: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+        }
+
+        .token-badge {
+            font-size: 10px;
+            color: var(--accent);
+            opacity: 0.6;
+            margin-top: 8px;
+            font-family: var(--font-mono);
+            text-align: right;
+            padding-right: 4px;
+        }
             padding: 28px;
             gap: 28px;
             overflow-y: auto;
@@ -699,6 +709,12 @@
                 Prism.highlightAllUnder(contentDiv);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             } else if (data.type === 'message_complete') {
+                if (activeMessageDiv && data.cost) {
+                    const badge = document.createElement('div');
+                    badge.className = 'token-badge';
+                    badge.innerHTML = `⚡ ${data.cost.toFixed(3)} P`;
+                    activeMessageDiv.appendChild(badge);
+                }
                 activeMessageDiv = null;
                 activeContent = "";
                 loadTasks();
