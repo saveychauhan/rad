@@ -91,7 +91,9 @@ async def get_tasks(request):
         tasks.append({
             "title": t.title,
             "status": t.status,
-            "priority": t.priority
+            "priority": t.priority,
+            "created_by": t.created_by,
+            "scheduled_for": t.scheduled_for.strftime('%Y-%m-%d %H:%M') if t.scheduled_for else None
         })
     return JsonResponse({"tasks": tasks})
 
