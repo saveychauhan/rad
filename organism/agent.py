@@ -160,6 +160,7 @@ class RadAgent:
                 args = tool_data.get("args", {})
                 
                 if tool_name in TOOL_MAP:
+                    await self.broadcast_status(f"Executing neural tool: {tool_name}...")
                     print(f"\n[⚡ NEURAL TOOL CALL]: {tool_name}({str(args)[:200]})")
                     func = TOOL_MAP[tool_name]
                     try:
