@@ -78,8 +78,21 @@ class RadSupervisor:
         print(f"[*] Starting {name}...")
         return subprocess.Popen(command, stdout=None, stderr=None)
 
+    def pre_flight_cleanup(self):
+        """Proactively clears ports and zombie processes before startup."""
+        print("[*] Performing pre-flight neural purge...")
+        try:
+            # Clear Port 8000 (Django)
+            subprocess.run("lsof -ti:8000 | xargs kill -9", shell=True, capture_output=True)
+            # Clear any orphaned celery workers
+            subprocess.run("pkill -9 -f 'celery'", shell=True, capture_output=True)
+            time.sleep(1)
+        except Exception as e:
+            print(f"[⚠️] Cleanup warning: {e}")
+
     def run(self):
         print("=== RAD MASTER SUPERVISOR STARTING ===")
+        self.pre_flight_cleanup()
         commands = {
             "Django (UI)": [sys.executable, "manage.py", "runserver", "0.0.0.0:8000", "--noreload"],
             "Celery (Subconscious)": ["celery", "-A", "core", "worker", "-l", "info"]
