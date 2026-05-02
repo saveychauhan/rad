@@ -57,14 +57,21 @@ async def search_facts(query=None):
         results.append(f"- {item.content} (Source: {item.title})")
     return "\n".join(results) if results else "No personal facts found in unified archive."
 
-async def remember(fact, context="Direct interaction", attachment=None):
-    """Imprints a new personal fact into the unified archive."""
+async def remember(fact=None, context="Direct interaction", attachment=None, **kwargs):
+    """Imprints a new personal fact into the unified archive. Handles aliases for robustness."""
+    actual_fact = fact or kwargs.get('value') or kwargs.get('note') or kwargs.get('fact_text')
+    actual_context = context or kwargs.get('key') or "Direct interaction"
+    actual_attachment = attachment or kwargs.get('image') or kwargs.get('file')
+    
+    if not actual_fact:
+        return "ERROR: No fact or value provided for memory."
+
     await RadLearning.objects.acreate(
-        title=f"Personal Fact: {context}", 
-        content=fact, 
+        title=f"Personal Fact: {actual_context}", 
+        content=actual_fact, 
         category='fact', 
         is_personal=True, 
         subject='Sawan',
-        attachment=attachment
+        attachment=actual_attachment
     )
-    return f"MEMORY IMPRINTED: I will never forget: '{fact}'" + (f" (Visual context archived: {attachment})" if attachment else "")
+    return f"MEMORY IMPRINTED: I will never forget: '{actual_fact}'" + (f" (Visual context archived: {actual_attachment})" if actual_attachment else "")
