@@ -73,6 +73,15 @@ class RadAgent:
             yield "ERROR: Max neural recursion limit exceeded (depth > 20). Safety brake engaged to prevent cognitive loops."
             return
 
+        if not await check_internet():
+            yield "ERROR: Hibernation mode active. Internet connection required."
+            return
+            
+        allowed, used = await self.check_pollen_budget()
+        if not allowed:
+            yield f"ERROR: Low on Pollen energy ({used:.2f}/{self.pollen_limit}). Recharging..."
+            return
+
         if not stream:
             response_text, cost, tokens = await self.brain.think(messages, stream=False)
             await APICall.objects.acreate(prompt=f"Model: {self.brain.model}", pollen_cost=cost)
