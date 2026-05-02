@@ -4,11 +4,19 @@ import os
 from asgiref.sync import sync_to_async
 from organism.sandbox import ensure_sandboxed
 
-def switch_brain(model_id=None, brain=None):
+async def switch_brain(model_id=None, brain=None):
     """Allows Rad to autonomously switch his active AI model."""
+    from .utils import broadcast_status_event
+    from organism.views import agent
+    
     target = model_id or brain
     if not target:
         return "ERROR: No model specified."
+    
+    success = agent.brain.set_model(target)
+    if not success:
+        return f"ECONOMY SHIELD: I cannot shift to '{target}' as it is a PAID model. I will remain on {agent.brain.model}."
+    
     return f"BRAIN_SHIFT: {target}"
 
 _MEDIA_ENGINES_CACHE = None
