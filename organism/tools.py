@@ -400,13 +400,26 @@ async def generate_media(prompt, type="audio", model=None):
 
 async def get_generation_capabilities():
     """
-    Returns the list of available models for image, audio, and video generation.
+    Returns the dynamic list of available models for image, audio, and video generation.
     """
-    return {
-        "image_models": ["flux", "flux-pro", "turbo", "dall-e-3", "grok-imagine", "p-image", "qwen-image", "klein", "nova-canvas"],
-        "audio_models": ["nova", "elevenlabs", "acestep", "qwen-tts", "elevenmusic"],
-        "video_models": ["p-video", "grok-video-pro", "ltx-2", "nova-reel"]
-    }
+    async with httpx.AsyncClient() as client:
+        try:
+            img_resp = await client.get("https://gen.pollinations.ai/image/models")
+            aud_resp = await client.get("https://gen.pollinations.ai/audio/models")
+            vid_resp = await client.get("https://gen.pollinations.ai/video/models")
+            
+            return {
+                "image_models": img_resp.json(),
+                "audio_models": aud_resp.json(),
+                "video_models": vid_resp.json()
+            }
+        except Exception:
+            # Fallback to static if API is unreachable
+            return {
+                "image_models": [{"id": "flux", "paid_only": false}],
+                "audio_models": [{"id": "nova", "paid_only": false}],
+                "video_models": [{"id": "p-video", "paid_only": true}]
+            }
 
 async def diagnose_errors(limit=5):
     """
