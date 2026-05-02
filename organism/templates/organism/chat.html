@@ -194,7 +194,7 @@
             margin-left: auto;
         }
 
-        .rad-message {
+        .rad-message, .assistant-message {
             align-self: flex-start;
             margin-right: auto;
         }
@@ -207,7 +207,7 @@
             word-wrap: break-word;
         }
 
-        .rad-message .message-content {
+        .rad-message .message-content, .assistant-message .message-content {
             background: var(--panel);
             border: 1px solid var(--border);
             border-left: 2.5px solid var(--accent);
@@ -217,7 +217,7 @@
             overflow: hidden;
         }
 
-        .rad-message .message-content::before {
+        .rad-message .message-content::before, .assistant-message .message-content::before {
             content: '';
             position: absolute;
             inset: 0;
@@ -227,7 +227,7 @@
             mix-blend-mode: screen;
         }
 
-        .rad-message .message-content::after {
+        .rad-message .message-content::after, .assistant-message .message-content::after {
             content: '';
             position: absolute;
             top: -2px; left: -2px;
@@ -464,7 +464,7 @@
             letter-spacing: 0.5px;
         }
 
-        .rad-message.subconscious-theme .message-content {
+        .rad-message.subconscious-theme .message-content, .assistant-message.subconscious-theme .message-content {
             border-left: 2.5px solid var(--purple);
             box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.02);
         }
@@ -937,6 +937,7 @@
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
+    marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
     function parseMarkdown(text) { return text ? marked.parse(text) : ""; }
 
     const fileInput = document.getElementById('file-input');
@@ -1028,24 +1029,29 @@
         }
     }
 
+    function renderHistory() {
+        console.log("RAD: Starting history manifestation...");
+        document.querySelectorAll('.message-content').forEach(el => {
+            const raw = el.textContent.trim();
+            if (raw && !el.dataset.parsed) {
+                try {
+                    el.innerHTML = parseMarkdown(raw);
+                    el.dataset.parsed = "true";
+                } catch (e) {
+                    console.error("RAD: Manifestation failed for message:", e);
+                }
+            }
+        });
+        Prism.highlightAllUnder(chatWindow);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
     stopBtn.onclick = function() { if (chatSocket.readyState === WebSocket.OPEN) chatSocket.send(JSON.stringify({'command': 'stop_generation'})); };
     connect();
     loadTasks();
+    renderHistory();
 </script>
 
-<script>
-  window.addEventListener('DOMContentLoaded', () => {
-    // Render Markdown for all server-side historical messages
-    document.querySelectorAll('.message .message-content').forEach(el => {
-      const rawMarkdown = el.textContent;
-      el.innerHTML = parseMarkdown(rawMarkdown);
-    });
-    Prism.highlightAllUnder(document.getElementById('chat-window'));
-
-    const chat = document.getElementById('chat-window');
-    if (chat) chat.scrollTop = chat.scrollHeight;
-  });
-</script>
 
 </body>
 </html>
