@@ -208,15 +208,19 @@ def dispatch_missions():
         task.status = 'doing'
         task.save()
         
-        # Consult the Brain to decide the path
+        # Consult the Brain with Soul Awareness
         from .agent import RadAgent
         agent = RadAgent()
+        soul = agent.get_soul()
         
         decision_prompt = f"""
+        {soul}
+        
+        [SYSTEM_CONTEXT]: You are currently in SUBCONSCIOUS DISPATCH MODE.
         MISSION TRIGGERED: '{task.title}'
         DESCRIPTION: '{task.description}'
         
-        Analyze this mission and decide the execution path. 
+        Analyze this mission through the lens of your soul and decide the execution path. 
         If it requires creating an image, video, or audio, respond with: 'MANIFEST: <refined_prompt>'
         If it requires system operations (files, search, code), respond with: 'EXECUTE: <tool_instruction>'
         Otherwise, if it's just a reminder or simple thought, respond with: 'THINK: <response>'
