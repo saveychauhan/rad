@@ -272,6 +272,11 @@ def dispatch_missions():
         task.completed_at = timezone.now()
         task.save()
         
+        # SYNC: Refresh the sidebar Mission Control
+        async_to_sync(channel_layer.group_send)("rad_comm", {
+            "type": "task_update_event"
+        })
+
         # RESET: Notify UI that subconscious is back to standby
         async_to_sync(channel_layer.group_send)("rad_comm", {
             "type": "rad_status_event",
