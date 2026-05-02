@@ -188,3 +188,42 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
             os.remove(lock_path)
             
     return "Thought complete"
+
+@shared_task
+def dispatch_missions():
+    """
+    The 'Neural Heartbeat'. Periodically scans for overdue missions and executes them.
+    """
+    from .models import RadTask
+    from django.utils import timezone
+    
+    now = timezone.now()
+    # Find missions that are 'todo' and scheduled for now or earlier
+    overdue_tasks = RadTask.objects.filter(status='todo', scheduled_for__lte=now)
+    
+    for task in overdue_tasks:
+        print(f"[HEARTBEAT] Dispatching Mission #{task.id}: {task.title}")
+        
+        # Determine the correct tool to call or just mark as 'doing'
+        if "generate" in task.title.lower():
+             # For image/media generation, we notify Rad to manifest it
+             channel_layer = get_channel_layer()
+             async_to_sync(channel_layer.group_send)(
+                 "rad_comm",
+                 {
+                     "type": "rad_broadcast",
+                     "content": f"[MISSION_TRIGGER]: The scheduled time for '{task.title}' has arrived. Initiating subconscious manifestation..."
+                 }
+             )
+             
+             # Call the command task logic (simulated here)
+             task.status = 'done'
+             task.completed_at = timezone.now()
+             task.save()
+        else:
+             # Standard execution
+             task.status = 'doing'
+             task.save()
+             run_command_task.delay(f"echo 'Executing: {task.title}'", task_id=task.id)
+
+    return f"Processed {overdue_tasks.count()} missions."
