@@ -97,7 +97,6 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
             memory = await agent.get_initial_messages()
             
             # --- ATTACHMENT AWARENESS ---
-            # If there's an active attachment in the current turn, notify Rad of its DISK path
             current_attachment = None
             for m in history:
                  if m.get('role') == 'user' and 'content' in m and isinstance(m['content'], list):
@@ -108,6 +107,9 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
             if current_attachment:
                  memory.append({
                      "role": "system", 
+                     "content": f"[SYSTEM_NOTICE]: A file is uploaded. PATH: {current_attachment}. Use this for archival."
+                 })
+
             # --- LOCAL TIME AWARENESS ---
             local_now = timezone.now()
             memory.append({
@@ -117,10 +119,9 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
 
             memory.extend(history)
             
-            # 👁️ VISION CHECK: If any message in history has multimodal content, use FREE 'openai'
+            # 👁️ VISION CHECK
             has_multimodal = any(isinstance(m['content'], list) for m in history)
             if has_multimodal:
-                # Use the brain's set_model to honor the Economy Shield
                 agent.brain.set_model("openai") 
                 await channel_layer.group_send(group_name, {
                     "type": "rad_status_event",
@@ -134,13 +135,8 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
             current_model_before = agent.brain.model
 
             async for chunk in agent.think(memory, stream=True):
-                # 🛑 NEURAL INTERRUPTION CHECK
                 if os.path.exists(os.path.join(settings.BASE_DIR, '.rad_stop_generation')):
                     os.remove(os.path.join(settings.BASE_DIR, '.rad_stop_generation'))
-                    await channel_layer.group_send(group_name, {
-                        "type": "rad_status_event",
-                        "content": "Consciousness Halted by User."
-                    })
                     break
 
                 if chunk.startswith("__META__:"):
@@ -161,10 +157,8 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
                     "model": agent.brain.model
                 })
 
-            # Save assistant response
             await ChatMessage.objects.acreate(role="assistant", content=full_response, model=agent.brain.model)
             
-            # Finalize
             await channel_layer.group_send(group_name, {
                 "type": "rad_complete_event",
                 "content": full_response,
@@ -190,7 +184,6 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
     except Exception as e:
         from .logger import log_neural_error
         log_neural_error(e, context={"task": "process_rad_thought", "message": message_content})
-        # Cleanup lock on crash
         if os.path.exists(lock_path):
             os.remove(lock_path)
             
