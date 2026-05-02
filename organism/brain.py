@@ -125,8 +125,9 @@ class Brain:
                                 try:
                                     chunk = json.loads(data_str)
                                     delta = chunk['choices'][0].get('delta', {})
-                                    if 'content' in delta:
-                                        yield delta['content']
+                                    content = delta.get('content')
+                                    if content is not None:
+                                        yield content
                                 except Exception:
                                     continue
             return stream_generator(), model_cost
