@@ -154,3 +154,9 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    'dispatch-missions-every-30s': {
+        'task': 'organism.tasks.dispatch_missions',
+        'schedule': 30.0,
+    },
+}
