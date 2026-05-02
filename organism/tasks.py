@@ -153,5 +153,13 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
             if os.path.exists(lock_path):
                 os.remove(lock_path)
 
-    asyncio.run(run_thought())
+    try:
+        asyncio.run(run_thought())
+    except Exception as e:
+        from .logger import log_neural_error
+        log_neural_error(e, context={"task": "process_rad_thought", "message": message_content})
+        # Cleanup lock on crash
+        if os.path.exists(lock_path):
+            os.remove(lock_path)
+            
     return "Thought complete"
