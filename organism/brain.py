@@ -59,47 +59,10 @@ class Brain:
         return [mid for mid, meta in info.items() if not meta['paid_only']]
 
     async def think(self, messages, stream=False):
-        """Sends messages to the brain with Economy Shield vision failover."""
-        # --- ECONOMY SHIELD: Vision Detection ---
-        has_image = False
-        for msg in messages:
-            if isinstance(msg.get('content'), list):
-                for item in msg['content']:
-                    if item.get('type') == 'image_url':
-                        has_image = True
-                        break
-
-        # If we have an image, and current model is NOT vision-capable, force to FREE 'openai'
-        current_model = self.model or 'openai'
-        if has_image and current_model not in ['openai', 'gemini-large']:
-            print(f"[ECONOMY SHIELD] Image detected. Shifting to FREE vision model (openai)...")
-            current_model = 'openai'
-
-        # --- LOCAL VISION BRIDGE ---
-        # Convert local /media/ paths to Base64 so the external API can 'see' them
-        import base64
-        import os
-        for msg in messages:
-            if isinstance(msg.get('content'), list):
-                for item in msg['content']:
-                    if item.get('type') == 'image_url':
-                        url = item['image_url'].get('url', '')
-                        if url.startswith('/media/') or url.startswith('media/'):
-                            # Resolve local path
-                            relative_path = url.lstrip('/')
-                            local_path = os.path.join(settings.BASE_DIR, relative_path)
-                            if os.path.exists(local_path):
-                                try:
-                                    with open(local_path, "rb") as f:
-                                        b64_data = base64.b64encode(f.read()).decode('utf-8')
-                                        ext = os.path.splitext(local_path)[1].replace('.', '') or 'jpeg'
-                                        item['image_url']['url'] = f"data:image/{ext};base64,{b64_data}"
-                                        print(f"[LOCAL BRIDGE] Converted {url} to Base64 for Neural Analysis.")
-                                except Exception as e:
-                                    print(f"[LOCAL BRIDGE] ERROR reading image: {e}")
-
+        """Sends messages to the brain and returns the response (supports streaming)."""
+        # Ensure we don't accidentally double-wrap content if it's already a list
         payload = {
-            "model": current_model if current_model != 'anonymous' else 'openai',
+            "model": self.model if self.model != 'anonymous' else 'openai',
             "messages": messages,
             "jsonMode": False,
             "stream": stream
