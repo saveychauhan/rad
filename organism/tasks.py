@@ -202,43 +202,67 @@ def dispatch_missions():
     overdue_tasks = RadTask.objects.filter(status='todo', scheduled_for__lte=now)
     
     for task in overdue_tasks:
-        print(f"[HEARTBEAT] Dispatching Mission #{task.id}: {task.title}")
+        print(f"[HEARTBEAT] Neural Decision Phase for Mission #{task.id}: {task.title}")
         
-        # Determine the correct tool to call
-        if "generate" in task.title.lower():
+        # Consult the Brain to decide the path
+        from .agent import RadAgent
+        agent = RadAgent()
+        
+        decision_prompt = f"""
+        MISSION TRIGGERED: '{task.title}'
+        DESCRIPTION: '{task.description}'
+        
+        Analyze this mission and decide the execution path. 
+        If it requires creating an image, video, or audio, respond with: 'MANIFEST: <refined_prompt>'
+        If it requires system operations (files, search, code), respond with: 'EXECUTE: <tool_instruction>'
+        Otherwise, if it's just a reminder or simple thought, respond with: 'THINK: <response>'
+        
+        DECISION:
+        """
+        
+        # Use a lightweight thought to decide
+        decision = async_to_sync(agent.think)([{"role": "system", "content": decision_prompt}])
+        decision = decision.strip()
+        
+        channel_layer = get_channel_layer()
+        
+        if decision.startswith("MANIFEST:"):
              from .tools.manifestation import generate_image
              from .models import ChatMessage
              
-             # Extract prompt - everything after "generate"
-             prompt_parts = task.title.lower().split("generate", 1)
-             prompt = prompt_parts[1].strip() if len(prompt_parts) > 1 else task.title
-             
-             # Call async manifestation engine from sync task
+             prompt = decision.split("MANIFEST:", 1)[1].strip()
              result_md = async_to_sync(generate_image)(prompt)
              
-             channel_layer = get_channel_layer()
-             async_to_sync(channel_layer.group_send)(
-                 "rad_comm",
-                 {
-                     "type": "rad_broadcast",
-                     "content": f"[MISSION_COMPLETE]: {result_md}"
-                 }
-             )
+             async_to_sync(channel_layer.group_send)("rad_comm", {
+                 "type": "rad_broadcast",
+                 "content": f"[MISSION_MANIFEST]: {result_md}"
+             })
              
-             # Persist to permanent chat history
              async_to_sync(ChatMessage.objects.acreate)(
-                 role="assistant",
-                 content=f"Subconscious Manifestation Complete: {result_md}",
-                 model="subconscious"
+                 role="assistant", content=f"Subconscious Manifestation: {result_md}", model="subconscious"
              )
              
-             task.status = 'done'
-             task.completed_at = timezone.now()
-             task.save()
+        elif decision.startswith("EXECUTE:"):
+             instruction = decision.split("EXECUTE:", 1)[1].strip()
+             # Trigger a full thought cycle to use tools
+             from .tasks import process_rad_thought
+             # We simulate a user message from the system to trigger the tool use
+             # But for now, we'll log it as a proactive internal action
+             async_to_sync(channel_layer.group_send)("rad_comm", {
+                 "type": "rad_broadcast",
+                 "content": f"[MISSION_EXECUTION]: Rad is performing internal operations: {instruction}"
+             })
+             # Placeholder for full tool-use chain
+             
         else:
-             # Standard execution for non-generation tasks
-             task.status = 'doing'
-             task.save()
-             run_command_task.delay(f"echo 'Executing: {task.title}'", task_id=task.id)
+             thought = decision.split("THINK:", 1)[1].strip() if "THINK:" in decision else decision
+             async_to_sync(channel_layer.group_send)("rad_comm", {
+                 "type": "rad_broadcast",
+                 "content": f"[MISSION_THOUGHT]: {thought}"
+             })
 
-    return f"Processed {overdue_tasks.count()} missions."
+        task.status = 'done'
+        task.completed_at = timezone.now()
+        task.save()
+
+    return f"Neural Decision complete for {overdue_tasks.count()} missions."
