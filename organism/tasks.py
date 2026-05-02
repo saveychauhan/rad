@@ -141,7 +141,7 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
                 })
 
             # Save assistant response
-            await ChatMessage.objects.acreate(role="assistant", content=full_response)
+            await ChatMessage.objects.acreate(role="assistant", content=full_response, model=agent.brain.model)
             
             # Finalize
             await channel_layer.group_send(group_name, {
