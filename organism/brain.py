@@ -30,29 +30,28 @@ class Brain:
         self.model = model_id
 
     async def get_model_info(self):
-        """Fetches models and their costs from Pollinations."""
+        """Fetches text models from the definitive Pollinations source."""
         if self._model_info:
             return self._model_info
             
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get("https://gen.pollinations.ai/v1/models")
+                resp = await client.get("https://gen.pollinations.ai/text/models")
                 data = resp.json()
                 self._model_info = {
-                    m['id']: {
-                        'cost': m.get('cost', 0.1),
+                    m['name']: {
+                        'cost': m.get('pricing', {}).get('promptTextTokens', 0.1),
                         'paid_only': m.get('paid_only', False),
-                        'tier': m.get('tier', 'anonymous'),
                         'description': m.get('description', '')
                     }
-                    for m in data.get('data', [])
-                    if 'text' in m.get('output_modalities', [])
+                    for m in data
                 }
         except Exception:
             # Safe fallbacks
             self._model_info = {
                 'openai': {'cost': 0.1, 'paid_only': False},
                 'mistral': {'cost': 0.05, 'paid_only': False},
+                'gemini-large': {'cost': 0.5, 'paid_only': True}
             }
         return self._model_info
 

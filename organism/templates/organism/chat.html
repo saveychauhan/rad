@@ -1132,10 +1132,7 @@
             const data = await resp.json();
             if (data.models) {
                 modelSelector.innerHTML = data.models.map(m => {
-                    let label = "(FREE)";
-                    if (m.is_paid === true) label = "(PAID)";
-                    else if (m.tier === 'pollen' || m.is_paid === false) label = "(POLLEN)";
-                    
+                    const label = (m.is_paid === true) ? "(PAID)" : "(POLLEN)";
                     const name = m.id.toUpperCase();
                     return `
                         <option value="${m.id}" ${m.id === data.current ? 'selected' : ''}>
