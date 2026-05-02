@@ -164,6 +164,7 @@ class RadAgent:
                 args = tool_data.get("args", {})
                 
                 if tool_name in TOOL_MAP:
+                    # HIGH-PRIORITY BROADCAST: Ensure the UI sees this subconscious action
                     await self.broadcast_status(f"Executing neural tool: {tool_name}...")
                     
                     # Inject UI preferences if model not specified in args
