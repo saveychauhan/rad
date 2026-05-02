@@ -81,6 +81,7 @@ class RadLearning(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='research')
+    attachment = models.TextField(null=True, blank=True) # URL or path to image/media
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
