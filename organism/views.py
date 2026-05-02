@@ -77,6 +77,12 @@ async def get_models(request):
     ]
     return JsonResponse({"models": all_models, "current": agent.brain.model})
 
+async def get_media_engines(request):
+    """Returns dynamic manifestation capabilities."""
+    from .tools import get_generation_capabilities
+    caps = await get_generation_capabilities()
+    return JsonResponse(caps)
+
 async def set_model(request):
     """Updates the active model."""
     if request.method == "POST":
