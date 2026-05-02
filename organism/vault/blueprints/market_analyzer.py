@@ -87,7 +87,7 @@ async def _fetch_json(ticker: str, range_period: str = DEFAULT_RANGE,
         # Default SSL context; Yahoo requires TLS.
         ctx = ssl.create_default_context()
 
-        def _ blocking_get():
+        def _blocking_get():
             with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
                 return json.loads(resp.read().decode("utf-8"))
 
