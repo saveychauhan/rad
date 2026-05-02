@@ -65,11 +65,33 @@ class RadConsumer(AsyncWebsocketConsumer):
         attachment_type = data.get('attachment_type')
 
         if message or attachment:
-            # Persist Message with attachment
+            # Handle attachment storage (base64 -> file)
+            attachment_url = None
+            if attachment and attachment.startswith('data:'):
+                try:
+                    import base64
+                    import uuid
+                    from django.core.files.base import ContentFile
+                    from django.conf import settings
+                    import os
+
+                    header, data = attachment.split(';base64,')
+                    ext = header.split('/')[-1]
+                    filename = f"{uuid.uuid4()}.{ext}"
+                    filepath = os.path.join(settings.MEDIA_ROOT, 'attachments', filename)
+                    
+                    with open(filepath, 'wb') as f:
+                        f.write(base64.b64decode(data))
+                    
+                    attachment_url = f"{settings.MEDIA_URL}attachments/{filename}"
+                except Exception as e:
+                    print(f"[ERROR] Failed to save attachment: {e}")
+
+            # Persist Message with attachment URL
             await ChatMessage.objects.acreate(
                 role="user", 
                 content=message or "", 
-                attachment=attachment,
+                attachment=attachment_url or attachment, # Fallback to original if URL not generated
                 attachment_type=attachment_type
             )
             
