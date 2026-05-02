@@ -96,7 +96,7 @@ async def get_tasks(request):
     """Returns the current list of missions."""
     from .models import RadTask
     tasks = []
-    async for t in RadTask.objects.all().order_by('-priority', '-created_at')[:10]:
+    async for t in RadTask.objects.exclude(status='done').order_by('-priority', '-created_at')[:10]:
         tasks.append({
             "title": t.title,
             "status": t.status,
