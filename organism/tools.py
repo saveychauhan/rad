@@ -500,6 +500,7 @@ TOOL_MAP = {
     "initiate_self_healing": initiate_self_healing,
     "evolve_toolkit": evolve_toolkit,
     "browse_url": browse_url,
+    "async_chrome_controller": async_chrome_controller,
     "hibernate": hibernate,
     "stop_task": stop_task
 }
