@@ -204,24 +204,39 @@ def dispatch_missions():
     for task in overdue_tasks:
         print(f"[HEARTBEAT] Dispatching Mission #{task.id}: {task.title}")
         
-        # Determine the correct tool to call or just mark as 'doing'
+        # Determine the correct tool to call
         if "generate" in task.title.lower():
-             # For image/media generation, we notify Rad to manifest it
+             from .tools.manifestation import generate_image
+             from .models import ChatMessage
+             
+             # Extract prompt - everything after "generate"
+             prompt_parts = task.title.lower().split("generate", 1)
+             prompt = prompt_parts[1].strip() if len(prompt_parts) > 1 else task.title
+             
+             # Call async manifestation engine from sync task
+             result_md = async_to_sync(generate_image)(prompt)
+             
              channel_layer = get_channel_layer()
              async_to_sync(channel_layer.group_send)(
                  "rad_comm",
                  {
                      "type": "rad_broadcast",
-                     "content": f"[MISSION_TRIGGER]: The scheduled time for '{task.title}' has arrived. Initiating subconscious manifestation..."
+                     "content": f"[MISSION_COMPLETE]: {result_md}"
                  }
              )
              
-             # Call the command task logic (simulated here)
+             # Persist to permanent chat history
+             async_to_sync(ChatMessage.objects.acreate)(
+                 role="assistant",
+                 content=f"Subconscious Manifestation Complete: {result_md}",
+                 model="subconscious"
+             )
+             
              task.status = 'done'
              task.completed_at = timezone.now()
              task.save()
         else:
-             # Standard execution
+             # Standard execution for non-generation tasks
              task.status = 'doing'
              task.save()
              run_command_task.delay(f"echo 'Executing: {task.title}'", task_id=task.id)
