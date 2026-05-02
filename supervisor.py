@@ -23,7 +23,7 @@ class RadSupervisor:
                     pass
             elif os.path.isdir(p):
                 for root, dirs, files in os.walk(p):
-                    dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ('venv', '__pycache__', 'migrations')]
+                    dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ('venv', '__pycache__', 'migrations', 'vault')]
                     for f in files:
                         if f.endswith('.py') and not f.startswith('.rad'):
                             full = os.path.join(root, f)
