@@ -111,10 +111,10 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
                  })
 
             # --- LOCAL TIME AWARENESS ---
-            local_now = timezone.now()
+            local_now = timezone.localtime()
             memory.append({
                 "role": "system", 
-                "content": f"[SYSTEM_TIME]: The current local time is {local_now.strftime('%Y-%m-%d %H:%M:%S')} ({settings.TIME_ZONE}). Use this as the definitive 'NOW' when scheduling tasks."
+                "content": f"[SYSTEM_TIME]: The current local time is {local_now.strftime('%Y-%m-%d %H:%M:%S')} ({settings.TIME_ZONE}). IGNORE UTC. Use this as the ONLY definitive 'NOW' for all scheduling."
             })
 
             memory.extend(history)
