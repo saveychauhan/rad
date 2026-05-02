@@ -2,12 +2,12 @@ import json
 import os
 import threading
 import time
+import base64
+import uuid
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.conf import settings
-import base64
-import uuid
 from .agent import RadAgent
 from .models import ChatMessage
 
@@ -95,15 +95,19 @@ class RadConsumer(AsyncWebsocketConsumer):
             if attachment and attachment.startswith('data:'):
                 try:
                     from django.core.files.base import ContentFile
-                    from django.conf import settings
 
                     header, b64_content = attachment.split(';base64,')
-                    ext = header.split('/')[-1]
+                    ext = header.split('/')[-1].split(';')[0]
                     filename = f"{uuid.uuid4()}.{ext}"
-                    filepath = os.path.join(settings.MEDIA_ROOT, 'attachments', filename)
+                    
+                    target_dir = os.path.join(settings.MEDIA_ROOT, 'attachments')
+                    os.makedirs(target_dir, exist_ok=True)
+                    filepath = os.path.normpath(os.path.join(target_dir, filename))
                     
                     with open(filepath, 'wb') as f:
                         f.write(base64.b64decode(b64_content))
+                        f.flush()
+                        os.fsync(f.fileno())
                     
                     attachment_url = f"{settings.MEDIA_URL}attachments/{filename}"
                 except Exception as e:
@@ -132,12 +136,11 @@ class RadConsumer(AsyncWebsocketConsumer):
                             try:
                                 # Remove leading slash
                                 relative_path = msg.attachment.lstrip('/')
-                                full_path = os.path.join(settings.BASE_DIR, relative_path)
+                                full_path = os.path.normpath(os.path.join(settings.BASE_DIR, relative_path))
                                 if os.path.exists(full_path):
                                     with open(full_path, "rb") as image_file:
-                                        # Determine mime type or just use original
-                                        b64_content = base64.b64encode(image_file.read()).decode('utf-8')
-                                        image_data = f"data:{msg.attachment_type};base64,{b64_content}"
+                                        b64_data = base64.b64encode(image_file.read()).decode('utf-8')
+                                        image_data = f"data:{msg.attachment_type};base64,{b64_data}"
                             except Exception as e:
                                 print(f"[ERROR] History b64 conversion failed: {e}")
 
