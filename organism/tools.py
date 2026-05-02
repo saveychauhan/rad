@@ -378,6 +378,28 @@ async def get_generation_capabilities():
         "video_models": ["p-video", "grok-video-pro", "ltx-2", "nova-reel"]
     }
 
+async def diagnose_errors(limit=5):
+    """
+    Retrieves the most recent system errors and stack traces.
+    Use this to identify bugs in your own code and fix them.
+    """
+    from .models import NeuralError
+    from asgiref.sync import sync_to_async
+    
+    errors = await sync_to_async(list)(NeuralError.objects.filter(is_fixed=False)[:limit])
+    if not errors:
+        return "System Health: 100%. No active neural glitches detected."
+    
+    report = "SYSTEM DIAGNOSIS REPORT:\n"
+    for err in errors:
+        report += f"--- ERROR [{err.id}] ---\n"
+        report += f"Type: {err.error_type}\n"
+        report += f"Message: {err.message}\n"
+        report += f"Timestamp: {err.timestamp}\n"
+        report += f"Stack Trace Snippet:\n{err.stack_trace[-500:]}\n\n"
+    
+    return report
+
 # Mapping tool names to functions
 TOOL_MAP = {
     "read_file": read_file,
@@ -400,5 +422,6 @@ TOOL_MAP = {
     "modify_code": modify_code,
     "generate_image": generate_image,
     "generate_media": generate_media,
-    "get_generation_capabilities": get_generation_capabilities
+    "get_generation_capabilities": get_generation_capabilities,
+    "diagnose_errors": diagnose_errors
 }
