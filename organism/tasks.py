@@ -207,6 +207,13 @@ def dispatch_missions():
         # LOCK: Mark as doing immediately to prevent heartbeat loops
         task.status = 'doing'
         task.save()
+
+        # BROADCAST: Notify UI that subconscious is active
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)("rad_comm", {
+            "type": "rad_status_event",
+            "content": "SUBCONSCIOUS_ACTIVE"
+        })
         
         # Consult the Brain with Soul Awareness
         from .agent import RadAgent
@@ -307,5 +314,11 @@ def dispatch_missions():
         task.status = 'done'
         task.completed_at = timezone.now()
         task.save()
+        
+        # RESET: Notify UI that subconscious is back to standby
+        async_to_sync(channel_layer.group_send)("rad_comm", {
+            "type": "rad_status_event",
+            "content": "ONLINE"
+        })
 
     return f"Neural Decision complete for {overdue_tasks.count()} missions."
