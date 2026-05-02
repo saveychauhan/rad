@@ -446,6 +446,20 @@
             flex-direction: column;
         }
 
+        .brain-tag {
+            font-size: 9px;
+            font-weight: bold;
+            color: var(--accent-purple);
+            background: rgba(147, 51, 234, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            display: inline-block;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .token-badge {
             font-size: 10px;
             color: var(--accent);
@@ -942,6 +956,12 @@
                 statusText.innerText = "STREAMING";
                 if (!activeMessageDiv) {
                     activeMessageDiv = createMessageDiv('rad');
+                    if (data.model) {
+                        const brainTag = document.createElement('span');
+                        brainTag.className = 'brain-tag';
+                        brainTag.innerText = `🧠 ${data.model.toUpperCase()}`;
+                        activeMessageDiv.appendChild(brainTag);
+                    }
                 }
                 activeContent += data.content;
                 const contentDiv = activeMessageDiv.querySelector('.message-content');
@@ -963,7 +983,7 @@
                 statusText.innerText = "ONLINE";
                 loadTasks();
             } else if (data.type === 'rad_broadcast') {
-                appendMessage('rad', data.content);
+                appendMessage('rad', data.content, null, null, data.model);
                 loadTasks();
             } else if (data.type === 'task_update_event') {
                 loadTasks();
@@ -1029,7 +1049,7 @@
         return div;
     }
 
-    function appendMessage(role, content, attachment = null, attachmentType = null) {
+    function appendMessage(role, content, attachment = null, attachmentType = null, model = null) {
         // Detect system/tool messages inline
         if (content.startsWith('[SYSTEM]:') || content.startsWith('Tool [')) {
             const div = createMessageDiv('system');
@@ -1039,6 +1059,14 @@
         }
 
         const div = createMessageDiv(role, attachment, attachmentType);
+        
+        if (model) {
+            const brainTag = document.createElement('span');
+            brainTag.className = 'brain-tag';
+            brainTag.innerText = `🧠 ${model.toUpperCase()}`;
+            div.appendChild(brainTag);
+        }
+
         div.querySelector('.message-content').innerHTML = parseMarkdown(content);
         Prism.highlightAllUnder(div);
         chatWindow.scrollTop = chatWindow.scrollHeight;
