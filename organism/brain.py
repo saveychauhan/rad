@@ -60,6 +60,7 @@ class Brain:
 
     async def think(self, messages, stream=False):
         """Sends messages to the brain and returns the response (supports streaming)."""
+        # Ensure we don't accidentally double-wrap content if it's already a list
         payload = {
             "model": self.model if self.model != 'anonymous' else 'openai',
             "messages": messages,
@@ -67,7 +68,9 @@ class Brain:
             "stream": stream
         }
         
-        headers = {}
+        headers = {
+            "Content-Type": "application/json"
+        }
         if self.api_key and self.model != 'anonymous':
             headers["Authorization"] = f"Bearer {self.api_key}"
         
@@ -80,14 +83,18 @@ class Brain:
                     resp = await client.post(self.url, json=payload, headers=headers)
                     resp.raise_for_status()
                     data = resp.json()
-                    content = data['choices'][0]['message']['content']
-                    usage = data.get('usage', {})
-                    tokens = {
-                        "prompt": usage.get('prompt_tokens', 0),
-                        "completion": usage.get('completion_tokens', 0),
-                        "total": usage.get('total_tokens', 0)
-                    }
-                    return content, model_cost, tokens
+                    
+                    if 'choices' in data and len(data['choices']) > 0:
+                        content = data['choices'][0]['message']['content']
+                        usage = data.get('usage', {})
+                        tokens = {
+                            "prompt": usage.get('prompt_tokens', 0),
+                            "completion": usage.get('completion_tokens', 0),
+                            "total": usage.get('total_tokens', 0)
+                        }
+                        return content, model_cost, tokens
+                    else:
+                        return f"ERROR: Invalid response from Pollinations: {resp.text}", 0, {}
                 except Exception as e:
                     return f"ERROR: {str(e)}", 0, {}
         else:
