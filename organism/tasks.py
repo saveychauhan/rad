@@ -220,9 +220,16 @@ def dispatch_missions():
         DECISION:
         """
         
-        # Use a lightweight thought to decide
-        decision = async_to_sync(agent.think)([{"role": "system", "content": decision_prompt}])
-        decision = decision.strip()
+        # We need a helper to consume the async generator
+        async def harvest_decision():
+            full_text = ""
+            async for chunk in agent.think([{"role": "system", "content": decision_prompt}], stream=False):
+                # Filter out system meta-tags
+                if not any(chunk.startswith(m) for m in ["__META__:", "__COST__:", "[SYSTEM]:"]):
+                    full_text += chunk
+            return full_text.strip()
+
+        decision = async_to_sync(harvest_decision)()
         
         channel_layer = get_channel_layer()
         
