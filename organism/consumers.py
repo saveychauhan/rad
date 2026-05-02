@@ -65,17 +65,30 @@ class RadConsumer(AsyncWebsocketConsumer):
         
         # Handle specialized UI commands
         if data.get('command') == 'add_task':
-            from .models import RadTask, ChatMessage
+            from .models import RadTask
+            from django.utils.dateparse import parse_datetime
             title = data.get('title')
-            task = await RadTask.objects.acreate(
-                title=title,
-                priority=data.get('priority', 'medium'),
-                is_recurring=data.get('is_recurring', False),
-                recurrence_interval=data.get('recurrence_interval', 'none'),
-                scheduled_for=data.get('scheduled_for'),
-                created_by=data.get('created_by', 'sawan')
-            )
-            await self.channel_layer.group_send(self.group_name, {"type": "task_update_event"})
+            try:
+                # Parse the temporal data before it hits the DB
+                sched_val = data.get('scheduled_for')
+                sched_dt = parse_datetime(sched_val) if sched_val else None
+                
+                await RadTask.objects.acreate(
+                    title=title,
+                    priority=data.get('priority', 'medium'),
+                    is_recurring=data.get('is_recurring', False),
+                    recurrence_interval=data.get('recurrence_interval', 'none'),
+                    scheduled_for=sched_dt,
+                    created_by=data.get('created_by', 'sawan')
+                )
+                await self.channel_layer.group_send(self.group_name, {"type": "task_update_event"})
+            except Exception as task_err:
+                print(f"[MISSION_CRITICAL] Failed to deploy mission: {task_err}")
+                await self.send(text_data=json.dumps({
+                    'type': 'status', 
+                    'content': f"Temporal sync error: {str(task_err)}"
+                }))
+                return
             
             # PROACTIVE ACKNOWLEDGEMENT: Rad thinks about the new mission immediately
             from .tasks import process_rad_thought
