@@ -44,7 +44,11 @@ async def search_facts(query=None):
         results.append(f"- {item.fact} (Context: {item.context})")
     return "\n".join(results) if results else "No facts found."
 
-async def remember(fact, context="Direct interaction"):
-    """Imprints a new fact about Sawan."""
-    await SawanFact.objects.acreate(fact=fact, context=context)
-    return f"MEMORY IMPRINTED: I will never forget: '{fact}'"
+async def remember(fact, context="Direct interaction", attachment=None):
+    """Imprints a new fact about Sawan. Supports optional attachment tagging."""
+    final_fact = fact
+    if attachment:
+        final_fact = f"[ATTACHMENT: {attachment}] {fact}"
+        
+    await SawanFact.objects.acreate(fact=final_fact, context=context)
+    return f"MEMORY IMPRINTED: I will never forget: '{fact}'" + (f" (Visual context archived: {attachment})" if attachment else "")
