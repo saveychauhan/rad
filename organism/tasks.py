@@ -95,15 +95,32 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
             
             # Add user message to history
             memory = await agent.get_initial_messages()
+            
+            # --- ATTACHMENT AWARENESS ---
+            # If there's an active attachment in the current turn, notify Rad of its DISK path
+            current_attachment = None
+            for m in history:
+                 if m.get('role') == 'user' and 'content' in m and isinstance(m['content'], list):
+                      for item in m['content']:
+                           if item.get('type') == 'image_url':
+                                current_attachment = item['image_url'].get('url')
+            
+            if current_attachment:
+                 memory.append({
+                     "role": "system", 
+                     "content": f"[SYSTEM_NOTICE]: A file has been uploaded and persistently saved to disk. PATH: {current_attachment}. Use this path if you need to remember or archive this file."
+                 })
+
             memory.extend(history)
             
-            # 👁️ VISION CHECK: If any message in history has multimodal content, use gemini-large
+            # 👁️ VISION CHECK: If any message in history has multimodal content, use FREE 'openai'
             has_multimodal = any(isinstance(m['content'], list) for m in history)
             if has_multimodal:
-                agent.brain.model = "gemini-large"
+                # Use the brain's set_model to honor the Economy Shield
+                agent.brain.set_model("openai") 
                 await channel_layer.group_send(group_name, {
                     "type": "rad_status_event",
-                    "content": "Vision detected. Activating Gemini-Large..."
+                    "content": "Vision detected. Activating FREE Neural Vision (openai)..."
                 })
             
             full_response = ""
