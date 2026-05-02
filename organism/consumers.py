@@ -104,11 +104,29 @@ class RadConsumer(AsyncWebsocketConsumer):
                 if msg.attachment:
                     # Multimodal representation
                     if msg.attachment_type and msg.attachment_type.startswith('image/'):
+                        image_data = msg.attachment
+                        if msg.attachment.startswith('/media/'):
+                            # Read from disk and convert to base64 for Rad
+                            try:
+                                import base64
+                                from django.conf import settings
+                                import os
+                                # Remove leading slash
+                                relative_path = msg.attachment.lstrip('/')
+                                full_path = os.path.join(settings.BASE_DIR, relative_path)
+                                if os.path.exists(full_path):
+                                    with open(full_path, "rb") as image_file:
+                                        # Determine mime type or just use original
+                                        b64_content = base64.b64encode(image_file.read()).decode('utf-8')
+                                        image_data = f"data:{msg.attachment_type};base64,{b64_content}"
+                            except Exception as e:
+                                print(f"[ERROR] History b64 conversion failed: {e}")
+
                         msg_data = {
                             "role": msg.role,
                             "content": [
                                 {"type": "text", "text": content},
-                                {"type": "image_url", "image_url": {"url": msg.attachment}}
+                                {"type": "image_url", "image_url": {"url": image_data}}
                             ]
                         }
                     else:
