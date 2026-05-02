@@ -250,7 +250,13 @@ class RadConsumer(AsyncWebsocketConsumer):
         )
 
     async def rad_chunk_event(self, event):
-        await self.send(text_data=json.dumps({'type': 'chunk', 'role': 'rad', 'content': event['content'], 'model': event.get('model')}))
+        await self.send(text_data=json.dumps({
+            'type': 'chunk', 
+            'role': 'rad', 
+            'content': event['content'], 
+            'model': event.get('model'),
+            'stream_id': event.get('stream_id')
+        }))
 
     async def rad_complete_event(self, event):
         await self.send(text_data=json.dumps({
@@ -260,7 +266,8 @@ class RadConsumer(AsyncWebsocketConsumer):
             'model': event.get('model'),
             'cost': event.get('cost', 0),
             'in_tokens': event.get('in_tokens', 0),
-            'out_tokens': event.get('out_tokens', 0)
+            'out_tokens': event.get('out_tokens', 0),
+            'stream_id': event.get('stream_id')
         }))
 
     async def rad_broadcast(self, event):
