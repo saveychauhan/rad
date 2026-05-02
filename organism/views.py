@@ -104,7 +104,7 @@ async def get_tasks(request):
             "created_by": t.created_by,
             "scheduled_for": t.scheduled_for.strftime('%Y-%m-%d %H:%M') if t.scheduled_for else None
         })
-    return JsonResponse({"tasks": tasks})
+    return JsonResponse(tasks, safe=False)
 
 def reset_chat(request):
     ChatMessage.objects.all().delete()
