@@ -70,7 +70,8 @@ async def get_models(request):
         {
             "id": mid, 
             "is_paid": meta.get('paid_only', False), 
-            "tier": meta.get('tier', 'pollen')
+            "tier": meta.get('tier', 'anonymous'),
+            "cost": meta.get('cost', 0)
         } 
         for mid, meta in models.items()
     ]
