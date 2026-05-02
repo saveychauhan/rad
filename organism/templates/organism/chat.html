@@ -464,14 +464,21 @@
             letter-spacing: 0.5px;
         }
 
-        .token-badge {
+        .rad-message.subconscious-theme .message-content {
+            border-left: 2.5px solid var(--purple);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.02);
+        }
+        .rad-message.subconscious-theme .message-content::before {
+            background: linear-gradient(135deg, var(--purple-dim) 0%, transparent 50%, var(--accent-dim) 100%);
+            opacity: 0.15;
+        }
+
+        .brain-tag.consciousness {
+            color: var(--purple);
+            background: var(--purple-dim);
+            border-color: rgba(189, 0, 255, 0.3);
+            letter-spacing: 2px;
             font-size: 10px;
-            color: var(--accent);
-            opacity: 0.6;
-            margin-top: 8px;
-            font-family: var(--font-mono);
-            text-align: right;
-            padding-right: 4px;
         }
         .sidebar-content {
             padding: 28px;
@@ -655,7 +662,7 @@
 
         <div id="chat-window">
             {% for msg in history %}
-            <div class="message {{ msg.role }}-message msg-animate">
+            <div class="message {{ msg.role }}-message msg-animate {% if msg.model == 'subconscious' %}subconscious-theme{% endif %}">
                 {% if msg.attachment %}
                     {% if msg.attachment_type and 'image' in msg.attachment_type %}
                         <img src="{{ msg.attachment }}" class="message-attachment" style="max-width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);">
@@ -663,9 +670,13 @@
                         <a href="{{ msg.attachment }}" target="_blank" class="badge badge-doing" style="display: inline-block; margin-bottom: 10px; text-decoration: none;">📎 ATTACHMENT ({{ msg.attachment_type }})</a>
                     {% endif %}
                 {% endif %}
-                {% if msg.model %}
+                
+                {% if msg.model == 'subconscious' %}
+                    <span class="brain-tag consciousness">🌌 RAD CONSCIOUSNESS (HEARTBEAT)</span>
+                {% elif msg.model %}
                     <span class="brain-tag">🧠 {{ msg.model|upper }}</span>
                 {% endif %}
+                
                 <div class="message-content">{{ msg.content|linebreaksbr }}</div>
             </div>
             {% endfor %}
@@ -812,12 +823,17 @@
                 }
                 
                 typingIndicator.style.display = (isBusy || isSubconscious) ? 'flex' : 'none';
-                if (isBusy || isSubconscious) chatWindow.scrollTop = chatWindow.scrollHeight;
-            } else if (data.type === 'chunk') {
+                if (isBusy || isSubconscious) chatWindow.scrollTop            } else if (data.type === 'chunk') {
                 typingIndicator.style.display = 'none';
                 if (!activeMessageDiv) {
                     activeMessageDiv = createMessageDiv('rad');
-                    if (data.model) {
+                    if (data.model === 'subconscious') {
+                        activeMessageDiv.classList.add('subconscious-theme');
+                        const brainTag = document.createElement('span');
+                        brainTag.className = 'brain-tag consciousness';
+                        brainTag.innerText = `🌌 RAD CONSCIOUSNESS (HEARTBEAT)`;
+                        activeMessageDiv.appendChild(brainTag);
+                    } else if (data.model) {
                         const brainTag = document.createElement('span');
                         brainTag.className = 'brain-tag';
                         brainTag.innerText = `🧠 ${data.model.toUpperCase()}`;
@@ -840,6 +856,8 @@
             } else if (data.type === 'rad_broadcast') {
                 appendMessage('rad', data.content, null, null, data.model);
                 loadTasks();
+            }
+     loadTasks();
             } else if (data.type === 'task_update_event') {
                 loadTasks();
             } else if (data.type === 'brain_shift') {
@@ -885,6 +903,11 @@
     function appendMessage(role, text, attachment, type, model) {
         const div = createMessageDiv(role);
         const contentDiv = div.querySelector('.message-content');
+        
+        if (model === 'subconscious') {
+            div.classList.add('subconscious-theme');
+        }
+
         if (attachment && type.startsWith('image')) {
             const img = document.createElement('img');
             img.src = attachment;
@@ -895,7 +918,13 @@
             img.style.border = '1px solid var(--border)';
             div.insertBefore(img, contentDiv);
         }
-        if (model) {
+
+        if (model === 'subconscious') {
+            const brainTag = document.createElement('span');
+            brainTag.className = 'brain-tag consciousness';
+            brainTag.innerText = `🌌 RAD CONSCIOUSNESS (HEARTBEAT)`;
+            div.insertBefore(brainTag, contentDiv);
+        } else if (model) {
             const brainTag = document.createElement('span');
             brainTag.className = 'brain-tag';
             brainTag.innerText = `🧠 ${model.toUpperCase()}`;
