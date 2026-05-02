@@ -75,6 +75,29 @@ class Brain:
             print(f"[ECONOMY SHIELD] Image detected. Shifting to FREE vision model (openai)...")
             current_model = 'openai'
 
+        # --- LOCAL VISION BRIDGE ---
+        # Convert local /media/ paths to Base64 so the external API can 'see' them
+        import base64
+        import os
+        for msg in messages:
+            if isinstance(msg.get('content'), list):
+                for item in msg['content']:
+                    if item.get('type') == 'image_url':
+                        url = item['image_url'].get('url', '')
+                        if url.startswith('/media/') or url.startswith('media/'):
+                            # Resolve local path
+                            relative_path = url.lstrip('/')
+                            local_path = os.path.join(settings.BASE_DIR, relative_path)
+                            if os.path.exists(local_path):
+                                try:
+                                    with open(local_path, "rb") as f:
+                                        b64_data = base64.b64encode(f.read()).decode('utf-8')
+                                        ext = os.path.splitext(local_path)[1].replace('.', '') or 'jpeg'
+                                        item['image_url']['url'] = f"data:image/{ext};base64,{b64_data}"
+                                        print(f"[LOCAL BRIDGE] Converted {url} to Base64 for Neural Analysis.")
+                                except Exception as e:
+                                    print(f"[LOCAL BRIDGE] ERROR reading image: {e}")
+
         payload = {
             "model": current_model if current_model != 'anonymous' else 'openai',
             "messages": messages,
