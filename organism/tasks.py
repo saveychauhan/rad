@@ -149,7 +149,8 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
                 "content": full_response,
                 "cost": current_cost,
                 "in_tokens": in_tokens,
-                "out_tokens": out_tokens
+                "out_tokens": out_tokens,
+                "model": agent.brain.model
             })
 
             current_model_after = agent.brain.model
