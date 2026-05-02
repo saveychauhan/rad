@@ -62,7 +62,7 @@ def run_command_task(command, task_id=None):
         return str(e)
 
 @shared_task
-def process_rad_thought(message_content, history):
+def process_rad_thought(message_content, history, image_model=None, audio_model=None, video_model=None):
     """
     Offloads Rad's complex thinking and tool execution to Celery.
     Streams results back to the UI via WebSockets.
@@ -75,6 +75,11 @@ def process_rad_thought(message_content, history):
     agent = RadAgent()
     channel_layer = get_channel_layer()
     group_name = "rad_comm"
+    
+    # Apply UI Preferences
+    agent.preferred_image_model = image_model or "flux"
+    agent.preferred_audio_model = audio_model or "nova"
+    agent.preferred_video_model = video_model or "p-video"
 
     # Set busy lock
     lock_path = os.path.join(settings.BASE_DIR, '.rad_busy')
