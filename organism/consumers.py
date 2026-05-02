@@ -230,8 +230,9 @@ class RadConsumer(AsyncWebsocketConsumer):
             'model': 'subconscious'
         }))
 
-        # 3. Trigger the Persona's response loop (same logic as user input)
+        # 3. Trigger the Persona's response loop with a unique Stream ID
         from .tasks import process_rad_thought
+        stream_id = str(uuid.uuid4())
         
         # Build history for context
         history = []
@@ -244,7 +245,8 @@ class RadConsumer(AsyncWebsocketConsumer):
             history,
             image_model=None,
             audio_model=None,
-            video_model=None
+            video_model=None,
+            stream_id=stream_id
         )
 
     async def rad_chunk_event(self, event):
