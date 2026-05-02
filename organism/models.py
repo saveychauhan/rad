@@ -9,6 +9,7 @@ class APICall(models.Model):
         return f"Call at {self.timestamp}: {self.prompt[:50]}"
 
 class SawanFact(models.Model):
+    """Stores information Rad learns about his creator, Sawan Chauhan."""
     fact = models.TextField(help_text="A specific fact or preference about Sawan.")
     context = models.CharField(max_length=255, blank=True, null=True, help_text="Where or why this was learned.")
     attachment = models.TextField(null=True, blank=True) # Image path/URL
