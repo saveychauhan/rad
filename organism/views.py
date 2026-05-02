@@ -83,6 +83,9 @@ async def get_media_engines(request):
     caps = await get_generation_capabilities()
     return JsonResponse(caps)
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 async def set_model(request):
     """Updates the active model."""
     if request.method == "POST":

@@ -738,13 +738,7 @@
                 <div class="sidebar-title purple">Neural Shift</div>
                 <div class="model-selector-wrap">
                     <select id="model-selector" class="model-select">
-                        <option value="openai">KIMI-K2.6 (POLLEN)</option>
-                        <option value="mistral">Mistral (FREE)</option>
-                        <option value="qwen">Qwen (FREE)</option>
-                        <option value="gemini-large">Gemini 2.0 (PAID)</option>
-                        <option value="claude-3.5-sonnet">Claude 3.5 (PAID)</option>
-                        <option value="p1">P1 (POLLEN)</option>
-                        <option value="deepseek">DeepSeek (FREE)</option>
+                        <option value="">Syncing Neural Pathways...</option>
                     </select>
                 </div>
             </div>
@@ -754,25 +748,17 @@
                 <div class="engine-controls">
                     <div class="engine-label">🎨 IMAGE</div>
                     <select id="image-model-selector" class="model-select">
-                        <option value="flux">FLUX (BALANCED)</option>
-                        <option value="flux-realism">FLUX REALISM (HIGH-FI)</option>
-                        <option value="flux-anime">FLUX ANIME (STYLIZED)</option>
-                        <option value="flux-3d">FLUX 3D (CINEMATIC)</option>
-                        <option value="flux-pixel">FLUX PIXEL (ART)</option>
-                        <option value="any-dark">ANY DARK (MOODY)</option>
+                        <option value="">Syncing Graphics...</option>
                     </select>
                     
                     <div class="engine-label">🔊 AUDIO</div>
                     <select id="audio-model-selector" class="model-select">
-                        <option value="nova">NOVA (FAST)</option>
-                        <option value="qwen-tts">QWEN TTS (NATURAL)</option>
+                        <option value="">Syncing Audio...</option>
                     </select>
  
                     <div class="engine-label">🎬 VIDEO</div>
                     <select id="video-model-selector" class="model-select">
-                        <option value="nova-reel">NOVA REEL (FAST)</option>
-                        <option value="ltx-2">LTX-2 (STABLE)</option>
-                        <option value="p-video">P-VIDEO (ADVANCED)</option>
+                        <option value="">Syncing Motion...</option>
                     </select>
                 </div>
             </div>
@@ -1046,9 +1032,58 @@
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
+    modelSelector.onchange = async function() {
+        await fetch('/set_model/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({model: modelSelector.value})
+        });
+    };
+
+    async function loadModels() {
+        try {
+            const resp = await fetch('/models/');
+            const data = await resp.json();
+            modelSelector.innerHTML = '';
+            data.models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                const tier = m.is_paid ? 'PAID' : 'FREE';
+                opt.innerText = `${m.id.toUpperCase()} (${tier})`;
+                if (m.id === data.current) opt.selected = true;
+                modelSelector.appendChild(opt);
+            });
+        } catch (e) { console.error("Neural sync error:", e); }
+    }
+
+    async function loadEngines() {
+        try {
+            const resp = await fetch('/engines/');
+            const data = await resp.json();
+            
+            const populate = (id, list) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = '';
+                list.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.innerText = item.toUpperCase();
+                    el.appendChild(opt);
+                });
+            };
+
+            populate('image-model-selector', data.image_models || []);
+            populate('audio-model-selector', data.audio_models || []);
+            populate('video-model-selector', data.video_models || []);
+        } catch (e) { console.error("Manifestation sync error:", e); }
+    }
+
     stopBtn.onclick = function() { if (chatSocket.readyState === WebSocket.OPEN) chatSocket.send(JSON.stringify({'command': 'stop_generation'})); };
     connect();
     loadTasks();
+    loadModels();
+    loadEngines();
     renderHistory();
 </script>
 
