@@ -47,11 +47,10 @@ class Brain:
                     for m in data
                 }
         except Exception:
-            # Safe fallbacks - ensuring cost is identified
+            # Safe fallbacks - STRICTLY FREE MODELS ONLY
             self._model_info = {
                 'openai': {'cost': 0.1, 'paid_only': False},
-                'mistral': {'cost': 0.05, 'paid_only': False},
-                'gemini-large': {'cost': 0.5, 'paid_only': True}
+                'mistral': {'cost': 0.05, 'paid_only': False}
             }
         return self._model_info
 
