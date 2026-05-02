@@ -2,9 +2,16 @@ import time
 from urllib.parse import quote
 
 async def generate_image(prompt, model="flux"):
-    """Generates an image via Pollinations."""
-    url = f"https://gen.pollinations.ai/image/{quote(prompt)}?model={model}&seed={int(time.time())}&nologo=true"
-    return f"IMAGE GENERATED: ![{prompt}]({url})"
+    """
+    Generates a high-fidelity image. 
+    Models: flux (default), flux-realism, flux-anime, flux-3d, flux-pixel, any-dark.
+    """
+    # Normalize model name
+    valid_models = ["flux", "flux-realism", "flux-anime", "flux-3d", "flux-pixel", "any-dark", "sana"]
+    target_model = model if model in valid_models else "flux"
+    
+    url = f"https://image.pollinations.ai/prompt/{quote(prompt)}?model={target_model}&seed={int(time.time())}&nologo=true&enhance=true"
+    return f"IMAGE GENERATED (Model: {target_model}): ![{prompt}]({url})"
 
 async def generate_media(prompt, type="audio", model=None):
     """Generates audio or video."""
