@@ -58,13 +58,25 @@ async def search_facts(query=None):
     return "\n".join(results) if results else "No personal facts found in unified archive."
 
 async def remember(fact=None, context="Direct interaction", attachment=None, **kwargs):
-    """Imprints a new personal fact into the unified archive. Handles aliases for robustness."""
+    """Imprints a new personal fact into the unified archive. Ultra-robust flattening of complex args."""
+    # Handle list-of-facts hallucination
+    complex_facts = kwargs.get('facts', [])
+    if isinstance(complex_facts, list) and len(complex_facts) > 0:
+        first_fact = complex_facts[0]
+        if isinstance(first_fact, dict):
+            fact = first_fact.get('text') or first_fact.get('fact')
+            context = first_fact.get('source') or context
+    
     actual_fact = fact or kwargs.get('value') or kwargs.get('note') or kwargs.get('fact_text')
     actual_context = context or kwargs.get('key') or "Direct interaction"
     actual_attachment = attachment or kwargs.get('image') or kwargs.get('file')
     
     if not actual_fact:
         return "ERROR: No fact or value provided for memory."
+
+    # If it's still a complex object, stringify it
+    if not isinstance(actual_fact, str):
+        actual_fact = str(actual_fact)
 
     await RadLearning.objects.acreate(
         title=f"Personal Fact: {actual_context}", 
