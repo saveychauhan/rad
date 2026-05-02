@@ -154,7 +154,8 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
                 await channel_layer.group_send(group_name, {
                     "type": "rad_chunk_event",
                     "content": chunk,
-                    "model": agent.brain.model
+                    "model": agent.brain.model,
+                    "stream_id": stream_id
                 })
 
             await ChatMessage.objects.acreate(role="assistant", content=full_response, model=agent.brain.model)
@@ -165,7 +166,8 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
                 "cost": current_cost,
                 "in_tokens": in_tokens,
                 "out_tokens": out_tokens,
-                "model": agent.brain.model
+                "model": agent.brain.model,
+                "stream_id": stream_id
             })
 
             current_model_after = agent.brain.model
