@@ -791,15 +791,18 @@
 
         <div id="chat-window">
             {% for msg in history %}
-            <div class="message {{ msg.role }}-message">
+            <div class="message {{ msg.role }}-message msg-animate">
                 {% if msg.attachment %}
-                    {% if "image" in msg.attachment_type %}
+                    {% if msg.attachment_type and 'image' in msg.attachment_type %}
                         <img src="{{ msg.attachment }}" class="message-attachment" style="max-width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);">
                     {% else %}
                         <a href="{{ msg.attachment }}" target="_blank" class="badge badge-doing" style="display: inline-block; margin-bottom: 10px; text-decoration: none;">📎 ATTACHMENT ({{ msg.attachment_type }})</a>
                     {% endif %}
                 {% endif %}
-                <div class="message-content">{{ msg.content }}</div>
+                {% if msg.model %}
+                    <span class="brain-tag">🧠 {{ msg.model|upper }}</span>
+                {% endif %}
+                <div class="message-content">{{ msg.content|linebreaksbr }}</div>
             </div>
             {% endfor %}
             <div id="typing-indicator">

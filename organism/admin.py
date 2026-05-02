@@ -19,12 +19,22 @@ class SawanFactAdmin(admin.ModelAdmin):
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = ('role', 'timestamp', 'content_preview')
-    list_filter = ('role', 'timestamp')
-    search_fields = ('content',)
+    list_display = ('id', 'role', 'brain_tag', 'timestamp', 'content_preview')
+    list_filter = ('role', 'model', 'timestamp')
+    search_fields = ('content', 'model')
+    ordering = ('-timestamp',)
+    readonly_fields = ('timestamp',)
+
+    def brain_tag(self, obj):
+        if not obj.model: return "-"
+        return obj.model.upper()
+    brain_tag.short_description = "Active Brain"
 
     def content_preview(self, obj):
-        return obj.content[:100]
+        if len(obj.content) > 120:
+            return obj.content[:120] + "..."
+        return obj.content
+    content_preview.short_description = "Message Snippet"
 
 @admin.register(RadTask)
 class RadTaskAdmin(admin.ModelAdmin):
