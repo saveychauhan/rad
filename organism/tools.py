@@ -412,11 +412,22 @@ async def hibernate():
 async def stop_task(pid: int):
     """
     Forcefully terminates a background process by its PID.
+    Includes a self-preservation guardrail to avoid killing the Master Supervisor.
     Args: pid (int)
     """
+    # Self-preservation: don't kill PID 1 or very low PIDs usually associated with system/supervisor
+    if pid <= 1:
+        return "ERROR: Cannot terminate critical system infrastructure."
+    
     try:
+        # Check if it's a python process that might be the supervisor
+        import psutil
+        proc = psutil.Process(pid)
+        if "supervisor" in proc.name().lower() or "python" in proc.name().lower() and pid == os.getppid():
+            return "ERROR: Access Denied. Attempting to kill the Master Supervisor is a violation of the Neural Integrity Protocol."
+            
         os.kill(pid, 9)
-        return f"TASK TERMINATED: Process {pid} has been stopped."
+        return f"TASK TERMINATED: Process {pid} has been neutralized."
     except Exception as e:
         return f"Error stopping task: {str(e)}"
 
