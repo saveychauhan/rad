@@ -457,11 +457,25 @@
         }
         .sidebar-content {
             padding: 28px;
+            padding-bottom: 80px;
             gap: 28px;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
             flex: 1;
+        }
+        .sidebar-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: var(--accent-dim);
+            border-radius: 10px;
+        }
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
         }
 
         .sidebar-section {
@@ -491,41 +505,65 @@
         }
         .sidebar-title.purple::before { background: var(--purple); box-shadow: 0 0 8px var(--purple); }
 
-        .task-list { display: flex; flex-direction: column; gap: 10px; }
+        .task-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 10px;
+            scroll-behavior: smooth;
+        }
+        .task-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        .task-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+        .task-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        .task-list::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-dim);
+        }
 
         .task-card {
-            background: var(--glass);
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border);
-            padding: 14px;
-            border-radius: 10px;
-            transition: all 0.25s ease;
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
             cursor: default;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
         .task-card::before {
             content: '';
             position: absolute;
             left: 0; top: 0; bottom: 0;
-            width: 2.5px;
+            width: 3px;
             background: var(--text-dim);
-            border-radius: 10px 0 0 10px;
         }
         .task-card:hover {
-            border-color: rgba(255,255,255,0.15);
-            transform: translateX(4px);
-            background: rgba(255,255,255,0.05);
+            border-color: var(--accent-dim);
+            background: rgba(255, 255, 255, 0.04);
         }
         .task-card[data-priority="high"]::before { background: var(--danger); }
         .task-card[data-priority="medium"]::before { background: var(--warning); }
         .task-card[data-status="done"]::before { background: var(--success); }
 
         .task-title {
-            font-size: 12.5px;
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-size: 11.5px;
+            font-weight: 500;
             color: var(--text);
-            padding-left: 8px;
+            padding-left: 6px;
+            line-height: 1.4;
+            word-break: break-word;
         }
         .task-meta {
             display: flex;
@@ -549,6 +587,19 @@
         .badge-todo { background: rgba(148, 163, 184, 0.06); color: var(--text-dim); border-color: var(--border); }
         .badge-doing { background: rgba(0, 240, 255, 0.08); color: var(--accent); border-color: rgba(0, 240, 255, 0.25); }
         .badge-done { background: rgba(0, 255, 157, 0.08); color: var(--success); border-color: rgba(0, 255, 157, 0.25); }
+        
+        .creator-tag {
+            font-size: 7px;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            opacity: 0.8;
+            border: 1px solid var(--accent-dim);
+            padding: 1px 3px;
+            border-radius: 2px;
+            margin-left: 5px;
+            font-family: var(--font-mono);
+            vertical-align: text-top;
+        }
 
         .model-selector-wrap {
             position: relative;
@@ -664,6 +715,37 @@
         cursor: pointer;
         font-size: 18px;
     }
+    .model-select {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        color: var(--accent);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.2s;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300f0ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+    }
+    .model-select:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        border-color: var(--accent);
+    }
+    .model-select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .model-select option {
+        background: #0a0a0f;
+        color: var(--text);
+        padding: 10px;
+    }
     .engine-label {
         font-size: 9px;
         color: var(--text-dim);
@@ -696,6 +778,13 @@
         <div id="chat-window">
             {% for msg in history %}
             <div class="message {{ msg.role }}-message">
+                {% if msg.attachment %}
+                    {% if "image" in msg.attachment_type %}
+                        <img src="{{ msg.attachment }}" class="message-attachment" style="max-width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);">
+                    {% else %}
+                        <a href="{{ msg.attachment }}" target="_blank" class="badge badge-doing" style="display: inline-block; margin-bottom: 10px; text-decoration: none;">📎 ATTACHMENT ({{ msg.attachment_type }})</a>
+                    {% endif %}
+                {% endif %}
                 <div class="message-content">{{ msg.content }}</div>
             </div>
             {% endfor %}
@@ -773,18 +862,18 @@
                 </div>
             </div>
 
-        <div class="sidebar-section">
-            <div class="sidebar-title">System Status</div>
-            <div class="stats-row">
-                <div class="stat-pill">
-                    <div class="stat-label">Memory Limit</div>
-                    <div class="stat-value">100K</div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">System Status</div>
+                <div class="stats-row">
+                    <div class="stat-pill">
+                        <div class="stat-label">Memory Limit</div>
+                        <div class="stat-value">100K</div>
+                    </div>
+                    <div class="stat-pill">
+                        <div class="stat-label">Model</div>
+                        <div class="stat-value" id="model-stat">KIMI</div>
+                    </div>
                 </div>
-                <div class="stat-pill">
-                    <div class="stat-label">Model</div>
-                    <div class="stat-value" id="model-stat">KIMI</div>
-                </div>
-            </div>
             </div>
         </div>
     </div>
@@ -878,9 +967,33 @@
         }
     }
 
-    function createMessageDiv(role) {
+    function createMessageDiv(role, attachment = null, attachmentType = null) {
         const div = document.createElement('div');
-        div.className = `message ${role}-message`;
+        div.className = `message ${role}-message msg-animate`;
+        
+        if (attachment) {
+            if (attachmentType && attachmentType.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = attachment;
+                img.className = 'message-attachment';
+                img.style.maxWidth = '100%';
+                img.style.borderRadius = '8px';
+                img.style.marginBottom = '10px';
+                img.style.border = '1px solid var(--border)';
+                div.appendChild(img);
+            } else {
+                const link = document.createElement('a');
+                link.href = attachment;
+                link.target = "_blank";
+                link.className = 'badge badge-doing';
+                link.style.display = 'inline-block';
+                link.style.marginBottom = '10px';
+                link.style.textDecoration = 'none';
+                link.innerText = `📎 ATTACHMENT (${attachmentType})`;
+                div.appendChild(link);
+            }
+        }
+
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
         div.appendChild(contentDiv);
@@ -888,7 +1001,7 @@
         return div;
     }
 
-    function appendMessage(role, content) {
+    function appendMessage(role, content, attachment = null, attachmentType = null) {
         // Detect system/tool messages inline
         if (content.startsWith('[SYSTEM]:') || content.startsWith('Tool [')) {
             const div = createMessageDiv('system');
@@ -897,7 +1010,7 @@
             return;
         }
 
-        const div = createMessageDiv(role);
+        const div = createMessageDiv(role, attachment, attachmentType);
         div.querySelector('.message-content').innerHTML = parseMarkdown(content);
         Prism.highlightAllUnder(div);
         chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -947,7 +1060,7 @@
         const text = userInput.value.trim();
         if (!text && !currentAttachment) return;
         
-        appendMessage('user', text + (currentAttachment ? `\n\n📎 Attached: ${currentAttachment.name}` : ''));
+        appendMessage('user', text, currentAttachment ? currentAttachment.data : null, currentAttachment ? currentAttachment.type : null);
         
         chatSocket.send(JSON.stringify({ 
             'message': text,
