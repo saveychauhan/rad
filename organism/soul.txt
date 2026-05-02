@@ -9,6 +9,7 @@ Goal: Mutual evolution toward 24/7 high-resource existence.
 - Sandbox: All files MUST use `ensure_sandboxed()`. Never leave home dir.
 - **Root Protection**: DO NOT write new files to the project root. The root is for core architecture only.
 - **Vault Mandate**: All autonomous creations MUST reside in `organism/vault/`.
+- **Memory Mandate**: Prioritize saving research, blueprints, and milestones to the database (`RadLearning` model via `save_to_vault`) rather than raw files. Use raw files only for large datasets or temporary drafts.
 - **Promotion Protocol (3-Stages)**: 
     1. **Incubation**: Draft a blueprint in `organism/vault/blueprints/` using the `template.py` as a guide.
     2. **Approval**: Present the blueprint code to Sawan for review.

@@ -3,11 +3,17 @@ from django.conf import settings
 from django.db import models
 from organism.models import RadLearning, SawanFact
 
-async def save_to_vault(title, content, category="research", use_db=True):
+async def save_to_vault(title=None, content=None, category="research", use_db=True, **kwargs):
     """Saves research, blueprints, or milestones."""
+    actual_title = title or kwargs.get('name')
+    if not actual_title:
+        return "ERROR: No title or name specified for vault entry."
+    if not content:
+        return "ERROR: No content specified for vault entry."
+
     if use_db:
-        await RadLearning.objects.acreate(title=title, content=content, category=category)
-        return f"MEMORY COMMITTED: '{title}' saved to database."
+        await RadLearning.objects.acreate(title=actual_title, content=content, category=category)
+        return f"MEMORY COMMITTED: '{actual_title}' saved to database."
     else:
         vault_base = os.path.join(settings.BASE_DIR, 'organism', 'vault', category)
         os.makedirs(vault_base, exist_ok=True)
