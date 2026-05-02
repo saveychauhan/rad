@@ -207,6 +207,36 @@
             border-left: 2.5px solid var(--accent);
             backdrop-filter: blur(12px);
             box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rad-message .message-content::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent-dim) 0%, transparent 50%, var(--purple-dim) 100%);
+            opacity: 0.08;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        .rad-message .message-content::after {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px;
+            width: calc(100% + 4px); height: calc(100% + 4px);
+            background: conic-gradient(from 0deg, transparent 0%, var(--accent) 10%, transparent 20%, var(--purple) 30%, transparent 40%);
+            opacity: 0.15;
+            z-index: -1;
+            filter: blur(8px);
+            animation: bioShimmer 6s linear infinite;
+            border-radius: inherit;
+        }
+
+        @keyframes bioShimmer {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .user-message .message-content {
