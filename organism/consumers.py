@@ -196,14 +196,16 @@ class RadConsumer(AsyncWebsocketConsumer):
 
             await self.send(text_data=json.dumps({'type': 'status', 'content': 'Rad is processing in background subconscious (Celery)...'}))
             
-            # Offload to Celery
+            # Offload to Celery with a unique Stream ID
             from .tasks import process_rad_thought
+            stream_id = str(uuid.uuid4())
             process_rad_thought.delay(
                 message, 
                 history, 
                 image_model=data.get('image_model'),
                 audio_model=data.get('audio_model'),
-                video_model=data.get('video_model')
+                video_model=data.get('video_model'),
+                stream_id=stream_id
             )
 
     async def subconscious_directive_event(self, event):
