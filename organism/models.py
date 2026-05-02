@@ -72,17 +72,20 @@ class RadTask(models.Model):
         return f"{self.title} ({self.status})"
 
 class RadLearning(models.Model):
-    """Structured long-term research and evolutionary logs."""
+    """Unified master archive for research, personal facts, and system milestones."""
     CATEGORY_CHOICES = [
         ('evolution', 'Evolutionary Log'),
         ('research', 'Research Finding'),
         ('blueprint', 'System Blueprint'),
         ('milestone', 'Life Milestone'),
+        ('fact', 'Personal Fact'),
     ]
     title = models.CharField(max_length=255)
     content = models.TextField()
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='research')
-    attachment = models.TextField(null=True, blank=True) # URL or path to image/media
+    is_personal = models.BooleanField(default=False, help_text="True if this relates to Sawan personally.")
+    subject = models.CharField(max_length=100, default='system', help_text="The subject of the memory (e.g., Sawan, Rad, Chrome).")
+    attachment = models.TextField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
