@@ -206,14 +206,54 @@ class RadConsumer(AsyncWebsocketConsumer):
                 video_model=data.get('video_model')
             )
 
+    async def subconscious_directive_event(self, event):
+        """Handles directives from the heartbeat consciousness."""
+        instruction = event['content']
+        
+        # 1. Persist the directive as a 'subconscious' user message
+        try:
+            await ChatMessage.objects.acreate(
+                role="user", 
+                content=instruction, 
+                model="subconscious"
+            )
+        except Exception as e:
+            print(f"[BRIDGE_ERROR] Failed to persist directive: {e}")
+
+        # 2. Broadcast the directive to the UI so Sawan can see the 'Pool of Three' interaction
+        await self.send(text_data=json.dumps({
+            'type': 'rad_broadcast', 
+            'role': 'rad', 
+            'content': instruction, 
+            'model': 'subconscious'
+        }))
+
+        # 3. Trigger the Persona's response loop (same logic as user input)
+        from .tasks import process_rad_thought
+        
+        # Build history for context
+        history = []
+        async for msg in ChatMessage.objects.all().order_by('-timestamp')[:15]:
+            history.append({"role": msg.role, "content": msg.content})
+        history.reverse()
+
+        process_rad_thought.delay(
+            instruction, 
+            history,
+            image_model=None,
+            audio_model=None,
+            video_model=None
+        )
+
     async def rad_chunk_event(self, event):
-        await self.send(text_data=json.dumps({'type': 'chunk', 'role': 'rad', 'content': event['content']}))
+        await self.send(text_data=json.dumps({'type': 'chunk', 'role': 'rad', 'content': event['content'], 'model': event.get('model')}))
 
     async def rad_complete_event(self, event):
         await self.send(text_data=json.dumps({
             'type': 'message_complete', 
             'role': 'rad', 
             'content': event['content'],
+            'model': event.get('model'),
             'cost': event.get('cost', 0),
             'in_tokens': event.get('in_tokens', 0),
             'out_tokens': event.get('out_tokens', 0)
