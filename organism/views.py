@@ -6,7 +6,7 @@ from .agent import RadAgent
 import json
 import os
 import time
-from .models import APICall, SawanFact, ChatMessage
+from .models import APICall, ChatMessage
 
 # Global agent instance
 agent = RadAgent()
