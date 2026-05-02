@@ -79,6 +79,9 @@ class RadAgent:
 
     async def think(self, messages, stream=False, depth=0):
         """Processes messages through the brain with a recursion limit to prevent loops."""
+        if os.path.exists(os.path.join(settings.BASE_DIR, '.rad_stop_generation')):
+            return
+
         if depth > 20:
             yield "ERROR: Max neural recursion limit exceeded (depth > 20). Safety brake engaged to prevent cognitive loops."
             return
