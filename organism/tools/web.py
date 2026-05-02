@@ -62,3 +62,12 @@ async def chrome_drive(action: str, payload: str = "", timeout: int = 45) -> str
         return f"CHROME {action.upper()} SUCCESS:\n{stdout.decode().strip()}"
     except Exception as e:
         return f"CHROME SYSTEM ERROR: {str(e)}"
+
+async def check_internet() -> bool:
+    """Checks if internet is available."""
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.get("https://www.google.com", timeout=5.0)
+            return True
+    except Exception:
+        return False
