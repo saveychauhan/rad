@@ -265,9 +265,19 @@ def dispatch_missions():
              
              async def execute_subconscious_tools():
                  full_tool_log = []
-                 # Get initial messages (soul + tools) so Rad knows how to act
                  subconscious_messages = await agent.get_initial_messages()
-                 subconscious_messages.append({"role": "system", "content": "You are in SUBCONSCIOUS MODE. Execute the mission using your tools and report only the final outcome."})
+                 
+                 # Inject Spatial Awareness Map
+                 spatial_map = """
+                 [NEURAL_DIRECTORY_MAP]:
+                 - UI/Templates: organism/templates/organism/chat.html
+                 - Logic/Views: organism/views.py
+                 - Tools/Brains: organism/tools/, organism/agent.py
+                 - Database/Models: organism/models.py
+                 - Heartbeat/Dispatcher: organism/tasks.py
+                 """
+                 
+                 subconscious_messages.append({"role": "system", "content": f"You are in SUBCONSCIOUS MODE. {spatial_map}\nExecute the mission using your tools and report only the final outcome."})
                  subconscious_messages.append({"role": "user", "content": instruction})
                  
                  async for chunk in agent.think(subconscious_messages, stream=False):
