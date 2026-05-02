@@ -41,6 +41,12 @@ class RadTask(models.Model):
         ('doing', 'In Progress'),
         ('done', 'Completed'),
     ]
+    RECURRENCE_CHOICES = [
+        ('none', 'One-time'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+    ]
     CREATOR_CHOICES = [
         ('sawan', 'Sawan (Creator)'),
         ('rad', 'Rad (Organism)'),
@@ -49,6 +55,8 @@ class RadTask(models.Model):
     description = models.TextField(blank=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='todo')
+    is_recurring = models.BooleanField(default=False)
+    recurrence_interval = models.CharField(max_length=10, choices=RECURRENCE_CHOICES, default='none')
     created_by = models.CharField(max_length=10, choices=CREATOR_CHOICES, default='rad')
     scheduled_for = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
