@@ -95,7 +95,8 @@ class RadSupervisor:
         self.pre_flight_cleanup()
         commands = {
             "Django (UI)": [sys.executable, "manage.py", "runserver", "0.0.0.0:8000", "--noreload"],
-            "Celery (Subconscious)": ["celery", "-A", "core", "worker", "-l", "info"]
+            "Celery (Subconscious)": ["celery", "-A", "core", "worker", "-l", "info"],
+            "Celery Beat (Heartbeat)": ["celery", "-A", "core", "beat", "-l", "info"]
         }
 
         for name, cmd in commands.items():
