@@ -664,6 +664,14 @@
         cursor: pointer;
         font-size: 18px;
     }
+    .engine-label {
+        font-size: 9px;
+        color: var(--text-dim);
+        margin-bottom: 4px;
+        margin-top: 10px;
+        letter-spacing: 1px;
+    }
+    .cyan { color: #00f0ff !important; }
 </style>
 </head>
 <body>
@@ -728,14 +736,42 @@
             <div class="sidebar-section">
                 <div class="sidebar-title purple">Neural Shift</div>
                 <div class="model-selector-wrap">
-                <select id="model-selector">
-                    <option value="kimi">KIMI (High Tier)</option>
-                    <option value="mistral">MISTRAL (Balanced)</option>
-                    <option value="qwen">QWEN (Swift)</option>
-                    <option value="anonymous">ANONYMOUS (Survival)</option>
-                </select>
+                    <select id="model-selector" class="model-select">
+                        <option value="openai">KIMI (Strategic)</option>
+                        <option value="mistral">Mistral (Fast)</option>
+                        <option value="qwen">Qwen (Coding)</option>
+                        <option value="gemini-large">Gemini (Vision/Video)</option>
+                    </select>
+                </div>
             </div>
-        </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title cyan">Manifestation Engines</div>
+                <div class="engine-controls">
+                    <div class="engine-label">🎨 IMAGE</div>
+                    <select id="image-model-selector" class="model-select">
+                        <option value="flux">FLUX (Default)</option>
+                        <option value="flux-pro">FLUX PRO (Ultra)</option>
+                        <option value="dall-e-3">DALL-E 3</option>
+                        <option value="grok-imagine">GROK</option>
+                        <option value="turbo">TURBO (Instant)</option>
+                    </select>
+                    
+                    <div class="engine-label">🔊 AUDIO</div>
+                    <select id="audio-model-selector" class="model-select">
+                        <option value="nova">NOVA (Fast)</option>
+                        <option value="elevenlabs">ELEVENLABS</option>
+                        <option value="qwen-tts">QWEN TTS</option>
+                    </select>
+
+                    <div class="engine-label">🎬 VIDEO</div>
+                    <select id="video-model-selector" class="model-select">
+                        <option value="p-video">P-VIDEO</option>
+                        <option value="grok-video-pro">GROK VIDEO</option>
+                        <option value="ltx-2">LTX-2</option>
+                    </select>
+                </div>
+            </div>
 
         <div class="sidebar-section">
             <div class="sidebar-title">System Status</div>
@@ -902,6 +938,10 @@
         fileInput.value = '';
     }
 
+    const imageModelSelector = document.getElementById('image-model-selector');
+    const audioModelSelector = document.getElementById('audio-model-selector');
+    const videoModelSelector = document.getElementById('video-model-selector');
+
     chatForm.onsubmit = (e) => {
         e.preventDefault();
         const text = userInput.value.trim();
@@ -913,7 +953,10 @@
             'message': text,
             'attachment': currentAttachment ? currentAttachment.data : null,
             'attachment_name': currentAttachment ? currentAttachment.name : null,
-            'attachment_type': currentAttachment ? currentAttachment.type : null
+            'attachment_type': currentAttachment ? currentAttachment.type : null,
+            'image_model': imageModelSelector.value,
+            'audio_model': audioModelSelector.value,
+            'video_model': videoModelSelector.value
         }));
         
         userInput.value = '';

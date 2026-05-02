@@ -108,7 +108,13 @@ class RadConsumer(AsyncWebsocketConsumer):
             
             # Offload to Celery
             from .tasks import process_rad_thought
-            process_rad_thought.delay(message, history)
+            process_rad_thought.delay(
+                message, 
+                history, 
+                image_model=data.get('image_model'),
+                audio_model=data.get('audio_model'),
+                video_model=data.get('video_model')
+            )
 
     async def rad_chunk_event(self, event):
         await self.send(text_data=json.dumps({'type': 'chunk', 'role': 'rad', 'content': event['content']}))
