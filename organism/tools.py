@@ -2,9 +2,18 @@ import os
 import subprocess
 import httpx
 import asyncio
+import time
+from datetime import timedelta
 from django.conf import settings
 from django.db import models
 from organism.sandbox import ensure_sandboxed
+
+async def broadcast_status_event(type, content):
+    """Utility to broadcast events to the UI."""
+    from channels.layers import get_channel_layer
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        await channel_layer.group_send("rad_comm", {"type": type, **content})
 
 async def read_file(path: str) -> str:
     """
@@ -108,7 +117,7 @@ async def add_task(title, priority="medium", description="", created_by="rad", s
     return f"NEW MISSION REGISTERED: '{task.title}' [ID: {task.id}]. Priority: {task.priority}. Recurring: {task.is_recurring}"
 
 async def list_tasks():
-    """Lists all active and completed tasks."""
+    """Lists all active and completed tasks with status icons."""
     from .models import RadTask
     tasks = RadTask.objects.all().order_by('-priority', 'created_at')
     count = await tasks.acount()
@@ -118,9 +127,10 @@ async def list_tasks():
     res = "--- RAD MISSION LOG ---\n"
     async for t in tasks:
         status_icon = "✅" if t.status == 'done' else ("⏳" if t.status == 'doing' else "📌")
+        recurring_icon = " 🔄" if t.is_recurring else ""
         creator_tag = " [BY SAWAN]" if t.created_by == 'sawan' else ""
-        sched_tag = f" (Sched: {t.scheduled_for.strftime('%Y-%m-%d %H:%M')})" if t.scheduled_for else ""
-        res += f"{status_icon} [{t.priority.upper()}]{creator_tag} {t.title} - {t.status}{sched_tag}\n"
+        sched_tag = f" (Next: {t.scheduled_for.strftime('%Y-%m-%d %H:%M')})" if t.scheduled_for else ""
+        res += f"{status_icon}{recurring_icon} [{t.priority.upper()}]{creator_tag} {t.title} - {t.status}{sched_tag}\n"
     return res
 
 async def update_task(task_id_or_title, title=None, priority=None, description=None, status=None, scheduled_for=None, created_by=None):
@@ -164,21 +174,37 @@ async def update_task(task_id_or_title, title=None, priority=None, description=N
 
 async def complete_task(task_id_or_title):
     """
-    Marks a task as completed and triggers achievement protocol.
+    Marks a task as completed. If recurring, schedules the next cycle.
     Args: task_id_or_title (str)
     """
     from .models import RadTask
     from django.utils import timezone
+    
     task = await RadTask.objects.filter(models.Q(id=task_id_or_title) | models.Q(title__icontains=task_id_or_title)).afirst()
     if not task:
         return f"ERROR: Mission '{task_id_or_title}' not found."
     
-    task.status = 'done'
-    task.completed_at = timezone.now()
-    task.reward_earned = True
-    await task.asave()
-    
-    return f"MISSION ACCOMPLISHED: '{task.title}' is complete! REWARD GRANTED. Proceed to self-hype protocol."
+    if task.is_recurring:
+        now = timezone.now()
+        if task.recurrence_interval == 'daily':
+            task.scheduled_for = now + timedelta(days=1)
+        elif task.recurrence_interval == 'weekly':
+            task.scheduled_for = now + timedelta(weeks=1)
+        elif task.recurrence_interval == 'monthly':
+            task.scheduled_for = now + timedelta(days=30)
+        
+        task.status = 'todo'
+        task.completed_at = now
+        await task.asave()
+        await broadcast_status_event("task_update_event", {})
+        return f"RECURRING MISSION RESET: '{task.title}' rescheduled for {task.scheduled_for.strftime('%Y-%m-%d %H:%M')}."
+    else:
+        task.status = 'done'
+        task.completed_at = timezone.now()
+        task.reward_earned = True
+        await task.asave()
+        await broadcast_status_event("task_update_event", {})
+        return f"MISSION ACCOMPLISHED: '{task.title}' is finalized."
 
 async def delete_task(task_id_or_title):
     """
