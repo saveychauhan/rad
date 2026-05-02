@@ -127,6 +127,8 @@ class RadAgent:
             
             full_response = ""
             async for chunk in generator:
+                if os.path.exists(os.path.join(settings.BASE_DIR, '.rad_stop_generation')):
+                    break
                 if chunk is not None:
                     full_response += chunk
                     yield chunk
