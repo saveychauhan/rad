@@ -23,14 +23,16 @@ async def save_to_vault(title=None, content=None, category="research", use_db=Tr
             f.write(content)
         return f"FILE ARCHIVED: '{filename}' saved to Vault."
 
-async def query_memory(query=None, category=None):
-    """Searches long-term database memories."""
+async def query_memory(query=None, category=None, date_from=None, date_to=None):
+    """Searches long-term database memories. date_from/date_to format: YYYY-MM-DD."""
     queryset = RadLearning.objects.all()
     if category: queryset = queryset.filter(category=category)
     if query: queryset = queryset.filter(models.Q(title__icontains=query) | models.Q(content__icontains=query))
+    if date_from: queryset = queryset.filter(timestamp__date__gte=date_from)
+    if date_to: queryset = queryset.filter(timestamp__date__lte=date_to)
     results = []
     async for item in queryset[:10]:
-        results.append(f"[{item.category.upper()}] {item.title}: {item.content[:200]}...")
+        results.append(f"[{item.category.upper()}] {item.title} ({item.timestamp.date()}): {item.content[:200]}...")
     return "\n\n".join(results) if results else "No memories found."
 
 async def search_facts(query=None):
