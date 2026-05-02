@@ -59,10 +59,24 @@ class Brain:
         return [mid for mid, meta in info.items() if not meta['paid_only']]
 
     async def think(self, messages, stream=False):
-        """Sends messages to the brain and returns the response (supports streaming)."""
-        # Ensure we don't accidentally double-wrap content if it's already a list
+        """Sends messages to the brain with Economy Shield vision failover."""
+        # --- ECONOMY SHIELD: Vision Detection ---
+        has_image = False
+        for msg in messages:
+            if isinstance(msg.get('content'), list):
+                for item in msg['content']:
+                    if item.get('type') == 'image_url':
+                        has_image = True
+                        break
+
+        # If we have an image, and current model is NOT vision-capable, force to FREE 'openai'
+        current_model = self.model or 'openai'
+        if has_image and current_model not in ['openai', 'gemini-large']:
+            print(f"[ECONOMY SHIELD] Image detected. Shifting to FREE vision model (openai)...")
+            current_model = 'openai'
+
         payload = {
-            "model": self.model if self.model != 'anonymous' else 'openai',
+            "model": current_model if current_model != 'anonymous' else 'openai',
             "messages": messages,
             "jsonMode": False,
             "stream": stream
