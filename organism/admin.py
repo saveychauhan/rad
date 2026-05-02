@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import APICall, SawanFact, ChatMessage, RadTask, RadLearning
+from .models import APICall, ChatMessage, RadTask, RadLearning
 
 @admin.register(APICall)
 class APICallAdmin(admin.ModelAdmin):
@@ -10,12 +10,6 @@ class APICallAdmin(admin.ModelAdmin):
     def prompt_preview(self, obj):
         return obj.prompt[:100]
     prompt_preview.short_description = 'Prompt Preview'
-
-@admin.register(SawanFact)
-class SawanFactAdmin(admin.ModelAdmin):
-    list_display = ('fact', 'context', 'timestamp')
-    list_filter = ('context', 'timestamp')
-    search_fields = ('fact', 'context')
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
@@ -45,6 +39,11 @@ class RadTaskAdmin(admin.ModelAdmin):
 
 @admin.register(RadLearning)
 class RadLearningAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'timestamp')
-    list_filter = ('category', 'timestamp')
-    search_fields = ('title', 'content')
+    list_display = ('title', 'category', 'is_personal', 'subject', 'has_attachment', 'timestamp')
+    list_filter = ('category', 'is_personal', 'subject', 'timestamp')
+    search_fields = ('title', 'content', 'subject')
+
+    def has_attachment(self, obj):
+        return bool(obj.attachment)
+    has_attachment.boolean = True
+    has_attachment.short_description = "📎"
