@@ -79,3 +79,19 @@ class RadLearning(models.Model):
 
     def __str__(self):
         return f"[{self.category.upper()}] {self.title}"
+
+class NeuralError(models.Model):
+    """Logs system errors for Rad to analyze and self-heal."""
+    timestamp = models.DateTimeField(auto_now_add=True)
+    error_type = models.CharField(max_length=255)
+    message = models.TextField()
+    stack_trace = models.TextField()
+    context = models.JSONField(null=True, blank=True)
+    is_fixed = models.BooleanField(default=False)
+    fix_notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"ERROR: {self.error_type} at {self.timestamp}"
