@@ -49,6 +49,8 @@ class RadAgent:
 
     async def get_initial_messages(self):
         soul = self.get_soul()
+        now = timezone.now()
+        current_time_str = now.strftime("%A, %B %d, %Y, %H:%M:%S UTC")
         
         # Build dynamic tool list
         tool_desc = "\n--- AVAILABLE TOOLS ---\n"
@@ -56,7 +58,7 @@ class RadAgent:
             desc = func.__doc__ or "No description."
             tool_desc += f"- {name}: {desc}\n"
         
-        system_content = f"{soul}\n{tool_desc}\n\nTo use a tool, respond with a JSON block: " + '{"tool": "name", "args": {"arg1": "val1"}}'
+        system_content = f"{soul}\n\n[CURRENT_TIME]: {current_time_str}\n{tool_desc}\n\nTo use a tool, respond with a JSON block: " + '{"tool": "name", "args": {"arg1": "val1"}}'
         
         messages = [{"role": "system", "content": system_content}]
         return messages
