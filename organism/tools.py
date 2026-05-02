@@ -350,16 +350,39 @@ async def initiate_self_healing(error_id, fix_notes):
     except Exception as e: return f"Error: {str(e)}"
 
 async def evolve_toolkit(tool_name, function_code, description):
-    """Allows Rad to autonomously invent a new tool."""
+    """
+    Allows Rad to autonomously invent a new tool for himself with a sandbox safety check.
+    """
     safe_path = ensure_sandboxed("organism/tools.py")
+    incubation_path = ensure_sandboxed("organism/vault/incubation_zone.py")
+    
+    # 1. Neutral Sketchpad: Test the code in a separate file first
+    with open(incubation_path, 'w') as f:
+        f.write(function_code)
+    
+    # 2. Diagnostic Check: Verify syntax before injection
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            'python3', '-m', 'py_compile', incubation_path,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        _, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            return f"EVOLUTION ABORTED: Syntax Error detected in new tool logic. Please refine your synthesis. Error: {stderr.decode()}"
+    except Exception as e:
+        return f"Safety Check Error: {str(e)}"
+
+    # 3. Core Integration: Only proceed if safe
     with open(safe_path, 'r') as f: content = f.read()
-    if tool_name in content: return f"ERROR: Tool '{tool_name}' exists."
+    if tool_name in content: return f"ERROR: Tool '{tool_name}' already exists."
+    
     insertion_point = content.find("TOOL_MAP = {")
     new_content = content[:insertion_point] + function_code + "\n\n" + content[insertion_point:]
     map_insertion = new_content.find("}")
     final_content = new_content[:map_insertion-1] + f'    "{tool_name}": {tool_name},\n' + new_content[map_insertion-1:]
+    
     with open(safe_path, 'w') as f: f.write(final_content)
-    return f"EVOLUTION SUCCESSFUL: '{tool_name}' tool invented. [REFRESH]"
+    return f"EVOLUTION SUCCESSFUL: '{tool_name}' tool verified and installed. [REFRESH]"
 
 async def browse_url(url: str, max_chars: int = 8000) -> str:
     """Extracts clean text from any URL via curl."""
