@@ -71,6 +71,7 @@ class RadConsumer(AsyncWebsocketConsumer):
                 priority=data.get('priority', 'medium'),
                 is_recurring=data.get('is_recurring', False),
                 recurrence_interval=data.get('recurrence_interval', 'none'),
+                scheduled_for=data.get('scheduled_for'),
                 created_by=data.get('created_by', 'sawan')
             )
             await self.channel_layer.group_send(self.group_name, {"type": "task_update_event"})
