@@ -265,10 +265,12 @@ def dispatch_missions():
              
              async def execute_subconscious_tools():
                  full_tool_log = []
-                 async for chunk in agent.think([
-                     {"role": "system", "content": "You are in SUBCONSCIOUS MODE. Execute the mission and report only the final outcome."},
-                     {"role": "user", "content": instruction}
-                 ], stream=False):
+                 # Get initial messages (soul + tools) so Rad knows how to act
+                 subconscious_messages = await agent.get_initial_messages()
+                 subconscious_messages.append({"role": "system", "content": "You are in SUBCONSCIOUS MODE. Execute the mission using your tools and report only the final outcome."})
+                 subconscious_messages.append({"role": "user", "content": instruction})
+                 
+                 async for chunk in agent.think(subconscious_messages, stream=False):
                      if not any(chunk.startswith(m) for m in ["__META__:", "__COST__:", "[SYSTEM]:"]):
                         full_tool_log.append(chunk)
                  return "".join(full_tool_log)
