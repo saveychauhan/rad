@@ -108,8 +108,12 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
             if current_attachment:
                  memory.append({
                      "role": "system", 
-                     "content": f"[SYSTEM_NOTICE]: A file has been uploaded and persistently saved to disk. PATH: {current_attachment}. Use this path if you need to remember or archive this file."
-                 })
+            # --- LOCAL TIME AWARENESS ---
+            local_now = timezone.now()
+            memory.append({
+                "role": "system", 
+                "content": f"[SYSTEM_TIME]: The current local time is {local_now.strftime('%Y-%m-%d %H:%M:%S')} ({settings.TIME_ZONE}). Use this as the definitive 'NOW' when scheduling tasks."
+            })
 
             memory.extend(history)
             
