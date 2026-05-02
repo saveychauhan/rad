@@ -105,16 +105,20 @@ class RadAgent:
             # Yield the original thought
             yield response_text
 
+            # TOOL EXECUTION LAYER
             tool_result = await self.handle_tools(response_text)
             if tool_result:
-                await ChatMessage.objects.acreate(role="system", content=tool_result)
-                # Yield the tool result so both user and model see it
-                yield f"\n\n[SYSTEM]: {tool_result}"
-                
+                # GUARDRAIL: Prevent infinite loops
+                if depth >= 5:
+                    yield f"\n\n[NEURAL_GUARDRAIL]: I have reached my recursive depth limit (5 attempts). I am hitting a cognitive wall and require manual intervention from Sawan to proceed safely."
+                    return
+
+                # Add tool result to history and think again
                 messages.append({"role": "assistant", "content": response_text})
-                messages.append({"role": "system", "content": tool_result})
-                # Recursive call with depth tracking
-                async for chunk in self.think(messages, stream=False, depth=depth+1):
+                messages.append({"role": "user", "content": tool_result})
+                
+                # Recursive call to handle the tool result (Conscious or Subconscious)
+                async for chunk in self.think(messages, stream=stream, depth=depth+1):
                     yield chunk
             return
         else:
