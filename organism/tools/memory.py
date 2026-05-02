@@ -1,0 +1,42 @@
+import os
+from django.conf import settings
+from django.db import models
+from organism.models import RadLearning, SawanFact
+
+async def save_to_vault(title, content, category="research", use_db=True):
+    """Saves research, blueprints, or milestones."""
+    if use_db:
+        await RadLearning.objects.acreate(title=title, content=content, category=category)
+        return f"MEMORY COMMITTED: '{title}' saved to database."
+    else:
+        vault_base = os.path.join(settings.BASE_DIR, 'organism', 'vault', category)
+        os.makedirs(vault_base, exist_ok=True)
+        filename = title.lower().replace(" ", "_") + ".md"
+        file_path = os.path.join(vault_base, filename)
+        with open(file_path, 'w') as f:
+            f.write(content)
+        return f"FILE ARCHIVED: '{filename}' saved to Vault."
+
+async def query_memory(query=None, category=None):
+    """Searches long-term database memories."""
+    queryset = RadLearning.objects.all()
+    if category: queryset = queryset.filter(category=category)
+    if query: queryset = queryset.filter(models.Q(title__icontains=query) | models.Q(content__icontains=query))
+    results = []
+    async for item in queryset[:10]:
+        results.append(f"[{item.category.upper()}] {item.title}: {item.content[:200]}...")
+    return "\n\n".join(results) if results else "No memories found."
+
+async def search_facts(query=None):
+    """Retrieves facts about Sawan."""
+    queryset = SawanFact.objects.all().order_by('-timestamp')
+    if query: queryset = queryset.filter(models.Q(fact__icontains=query) | models.Q(context__icontains=query))
+    results = []
+    async for item in queryset[:20]:
+        results.append(f"- {item.fact} (Context: {item.context})")
+    return "\n".join(results) if results else "No facts found."
+
+async def remember(fact, context="Direct interaction"):
+    """Imprints a new fact about Sawan."""
+    await SawanFact.objects.acreate(fact=fact, context=context)
+    return f"MEMORY IMPRINTED: I will never forget: '{fact}'"
