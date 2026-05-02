@@ -127,8 +127,9 @@ class RadAgent:
             
             full_response = ""
             async for chunk in generator:
-                full_response += chunk
-                yield chunk
+                if chunk is not None:
+                    full_response += chunk
+                    yield chunk
             
             # Estimate tokens
             prompt_text = str(messages)
