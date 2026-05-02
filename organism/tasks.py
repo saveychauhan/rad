@@ -113,6 +113,15 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
             current_model_before = agent.brain.model
 
             async for chunk in agent.think(memory, stream=True):
+                # 🛑 NEURAL INTERRUPTION CHECK
+                if os.path.exists(os.path.join(settings.BASE_DIR, '.rad_stop_generation')):
+                    os.remove(os.path.join(settings.BASE_DIR, '.rad_stop_generation'))
+                    await channel_layer.group_send(group_name, {
+                        "type": "rad_status_event",
+                        "content": "Consciousness Halted by User."
+                    })
+                    break
+
                 if chunk.startswith("__META__:"):
                     parts = chunk.split(":")[1].split("|")
                     current_cost = float(parts[0])

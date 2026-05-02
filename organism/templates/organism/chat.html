@@ -806,6 +806,7 @@
                     <input type="file" id="file-input" style="display: none;" accept="image/*,application/pdf,text/*">
                     <button type="button" class="attachment-btn" onclick="document.getElementById('file-input').click()">📎</button>
                     <input type="text" id="user-input" placeholder="Initiate thought transfer..." autocomplete="off">
+                    <button type="button" id="stop-btn" class="send-btn stop-btn" style="display: none; background: #ff4d4d; margin-right: 5px;">⏹</button>
                     <button type="submit" class="send-btn">→</button>
                 </div>
             </form>
@@ -948,6 +949,9 @@
                 Prism.highlightAllUnder(contentDiv);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             } else if (data.type === 'message_complete') {
+                stopBtn.style.display = 'none';
+                userInput.disabled = false;
+                userInput.placeholder = "Initiate thought transfer...";
                 if (activeMessageDiv && (data.in_tokens || data.out_tokens)) {
                     const badge = document.createElement('div');
                     badge.className = 'token-badge';
@@ -1079,6 +1083,18 @@
     const audioModelSelector = document.getElementById('audio-model-selector');
     const videoModelSelector = document.getElementById('video-model-selector');
 
+    const stopBtn = document.getElementById('stop-btn');
+
+    stopBtn.onclick = () => {
+        // Send a cancellation signal if needed, or just reset UI
+        stopBtn.style.display = 'none';
+        userInput.disabled = false;
+        userInput.placeholder = "Initiate thought transfer...";
+        appendMessage('system', "[NEURAL INTERRUPTION]: Generation halted by user.");
+        // We could also send a specific 'stop' message to the socket
+        chatSocket.send(JSON.stringify({'command': 'stop_generation'}));
+    };
+
     chatForm.onsubmit = (e) => {
         e.preventDefault();
         const text = userInput.value.trim();
@@ -1086,6 +1102,11 @@
         
         appendMessage('user', text, currentAttachment ? currentAttachment.data : null, currentAttachment ? currentAttachment.type : null);
         
+        // Show stop button and disable input
+        stopBtn.style.display = 'block';
+        userInput.disabled = true;
+        userInput.placeholder = "Agent is deep in thought...";
+
         chatSocket.send(JSON.stringify({ 
             'message': text,
             'attachment': currentAttachment ? currentAttachment.data : null,
