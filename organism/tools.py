@@ -341,6 +341,43 @@ async def modify_code(file_path, search, replace):
     except Exception as e:
         return f"CODE MODIFIED: {file_path} updated, but auto-commit failed ({str(e)}). Restart supervisor to apply changes. [REFRESH]"
 
+async def generate_image(prompt, model="flux"):
+    """
+    Generates a stunning image based on the prompt. 
+    Args: prompt (str), model (str: 'flux', 'flux-pro', 'turbo', 'dall-e-3', 'grok-imagine')
+    Returns: The URL of the generated image.
+    """
+    from urllib.parse import quote
+    encoded_prompt = quote(prompt)
+    url = f"https://gen.pollinations.ai/image/{encoded_prompt}?model={model}&seed={int(time.time())}&width=1024&height=1024&nologo=true"
+    return f"IMAGE GENERATED: ![{prompt}]({url})"
+
+async def generate_media(prompt, type="audio", model=None):
+    """
+    Generates audio or video based on the prompt.
+    Args: prompt (str), type (str: 'audio' or 'video'), model (str, optional)
+    """
+    from urllib.parse import quote
+    encoded_prompt = quote(prompt)
+    if type == "audio":
+        selected_model = model or "nova"
+        url = f"https://gen.pollinations.ai/audio/{encoded_prompt}?model={selected_model}"
+        return f"AUDIO GENERATED: Listen here: {url}"
+    else:
+        selected_model = model or "p-video"
+        url = f"https://gen.pollinations.ai/video/{encoded_prompt}?model={selected_model}"
+        return f"VIDEO GENERATED: Watch here: {url}"
+
+async def get_generation_capabilities():
+    """
+    Returns the list of available models for image, audio, and video generation.
+    """
+    return {
+        "image_models": ["flux", "flux-pro", "turbo", "dall-e-3", "grok-imagine", "p-image", "qwen-image", "klein", "nova-canvas"],
+        "audio_models": ["nova", "elevenlabs", "acestep", "qwen-tts", "elevenmusic"],
+        "video_models": ["p-video", "grok-video-pro", "ltx-2", "nova-reel"]
+    }
+
 # Mapping tool names to functions
 TOOL_MAP = {
     "read_file": read_file,
@@ -361,4 +398,7 @@ TOOL_MAP = {
     "run_background_command": run_background_command,
     "search_web": search_web,
     "modify_code": modify_code,
+    "generate_image": generate_image,
+    "generate_media": generate_media,
+    "get_generation_capabilities": get_generation_capabilities
 }

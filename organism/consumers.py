@@ -61,24 +61,47 @@ class RadConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         message = data.get('message')
-        if message:
-            # Persist User Message
-            await ChatMessage.objects.acreate(role="user", content=message)
+        attachment = data.get('attachment')
+        attachment_type = data.get('attachment_type')
+
+        if message or attachment:
+            # Persist Message with attachment
+            await ChatMessage.objects.acreate(
+                role="user", 
+                content=message or "", 
+                attachment=attachment,
+                attachment_type=attachment_type
+            )
             
-            # Prepare History
+            # Prepare History (with multimodal awareness)
             history = []
             max_hist_chars = 4000
-            max_msg_chars = 1500
             current_chars = 0
             async for msg in ChatMessage.objects.all().order_by('-timestamp'):
                 content = msg.content
-                if len(content) > max_msg_chars:
-                    content = content[:max_msg_chars] + "\n\n...[CONTENT TRUNCATED FOR MEMORY]..."
-                if current_chars + len(content) > max_hist_chars:
-                    if not history: history.append({"role": msg.role, "content": content})
+                if msg.attachment:
+                    # Multimodal representation
+                    if msg.attachment_type and msg.attachment_type.startswith('image/'):
+                        msg_data = {
+                            "role": msg.role,
+                            "content": [
+                                {"type": "text", "text": content},
+                                {"type": "image_url", "image_url": {"url": msg.attachment}}
+                            ]
+                        }
+                    else:
+                        msg_data = {"role": msg.role, "content": f"{content}\n[FILE ATTACHED: {msg.attachment_type}]"}
+                else:
+                    msg_data = {"role": msg.role, "content": content}
+
+                # Approximate char count
+                msg_len = len(str(msg_data))
+                if current_chars + msg_len > max_hist_chars:
+                    if not history: history.append(msg_data)
                     break
-                history.append({"role": msg.role, "content": content})
-                current_chars += len(content)
+                history.append(msg_data)
+                current_chars += msg_len
+
             history.reverse()
 
             await self.send(text_data=json.dumps({'type': 'status', 'content': 'Rad is processing in background subconscious (Celery)...'}))

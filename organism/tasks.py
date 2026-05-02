@@ -92,6 +92,15 @@ def process_rad_thought(message_content, history):
             memory = await agent.get_initial_messages()
             memory.extend(history)
             
+            # 👁️ VISION CHECK: If any message in history has multimodal content, use gemini-large
+            has_multimodal = any(isinstance(m['content'], list) for m in history)
+            if has_multimodal:
+                agent.brain.model = "gemini-large"
+                await channel_layer.group_send(group_name, {
+                    "type": "rad_status_event",
+                    "content": "Vision detected. Activating Gemini-Large..."
+                })
+            
             full_response = ""
             current_cost = 0.0
             in_tokens = 0

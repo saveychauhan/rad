@@ -20,6 +20,8 @@ class SawanFact(models.Model):
 class ChatMessage(models.Model):
     role = models.CharField(max_length=20) # 'user' or 'assistant'
     content = models.TextField()
+    attachment = models.TextField(null=True, blank=True) # Base64 or URL
+    attachment_type = models.CharField(max_length=50, null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
