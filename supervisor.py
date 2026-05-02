@@ -25,7 +25,7 @@ class RadSupervisor:
                 for root, dirs, files in os.walk(p):
                     dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ('venv', '__pycache__', 'migrations')]
                     for f in files:
-                        if f.endswith('.py'):
+                        if f.endswith('.py') and not f.startswith('.rad'):
                             full = os.path.join(root, f)
                             try:
                                 snap[full] = os.path.getmtime(full)
