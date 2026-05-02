@@ -287,8 +287,14 @@ def dispatch_missions():
                  subconscious_messages.append({"role": "system", "content": f"You are in SUBCONSCIOUS MODE. {spatial_map}\nExecute the mission using your tools and report only the final outcome."})
                  subconscious_messages.append({"role": "user", "content": instruction})
                  
-                 async for chunk in agent.think(subconscious_messages, stream=False):
+                 async for chunk in agent.think(subconscious_messages, stream=True):
                      if not any(chunk.startswith(m) for m in ["__META__:", "__COST__:", "[SYSTEM]:"]):
+                        # STREAM: Send live chunks to the UI so the user can see the "Thought Process"
+                        async_to_sync(channel_layer.group_send)("rad_comm", {
+                            "type": "rad_chunk_event",
+                            "content": chunk,
+                            "model": agent.brain.model
+                        })
                         full_tool_log.append(chunk)
                  return "".join(full_tool_log)
              
