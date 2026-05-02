@@ -75,13 +75,13 @@ class RadConsumer(AsyncWebsocketConsumer):
                     from django.conf import settings
                     import os
 
-                    header, data = attachment.split(';base64,')
+                    header, b64_content = attachment.split(';base64,')
                     ext = header.split('/')[-1]
                     filename = f"{uuid.uuid4()}.{ext}"
                     filepath = os.path.join(settings.MEDIA_ROOT, 'attachments', filename)
                     
                     with open(filepath, 'wb') as f:
-                        f.write(base64.b64decode(data))
+                        f.write(base64.b64decode(b64_content))
                     
                     attachment_url = f"{settings.MEDIA_URL}attachments/{filename}"
                 except Exception as e:
