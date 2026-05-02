@@ -3,7 +3,7 @@ from .system import execute_command, run_background_command, stop_task, hibernat
 from .missions import add_task, list_tasks, update_task, complete_task, delete_task, delete_all_tasks
 from .neural import switch_brain, get_generation_capabilities, diagnose_errors, initiate_self_healing, evolve_toolkit
 from .memory import save_to_vault, remember, search_facts, query_memory
-from .web import search_web, browse_url, chrome_drive
+from .web import search_web, browse_url, chrome_drive, check_internet
 from .manifestation import generate_image, generate_media
 from .code import modify_code
 
