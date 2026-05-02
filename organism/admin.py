@@ -19,7 +19,7 @@ class SawanFactAdmin(admin.ModelAdmin):
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'role', 'brain_tag', 'timestamp', 'content_preview')
+    list_display = ('id', 'role', 'model', 'brain_tag', 'timestamp', 'content_preview')
     list_filter = ('role', 'model', 'timestamp')
     search_fields = ('content', 'model')
     ordering = ('-timestamp',)
