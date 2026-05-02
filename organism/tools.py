@@ -430,6 +430,24 @@ async def diagnose_errors(limit=5):
     
     return report
 
+async def initiate_self_healing(error_id, fix_notes):
+    """
+    Marks a diagnosed error as 'Fixed' in the database.
+    Use this AFTER you have successfully modified the code to fix a bug.
+    Args: error_id (int), fix_notes (str)
+    """
+    from .models import NeuralError
+    from asgiref.sync import sync_to_async
+    
+    try:
+        err = await sync_to_async(NeuralError.objects.get)(id=error_id)
+        err.is_fixed = True
+        err.fix_notes = fix_notes
+        await sync_to_async(err.save)()
+        return f"HEALING COMPLETE: Neural Glitch [{error_id}] has been resolved and archived. Fix Notes: {fix_notes}"
+    except Exception as e:
+        return f"Healing Error: Could not archive glitch [{error_id}]. {str(e)}"
+
 # Mapping tool names to functions
 TOOL_MAP = {
     "read_file": read_file,
@@ -453,5 +471,6 @@ TOOL_MAP = {
     "generate_image": generate_image,
     "generate_media": generate_media,
     "get_generation_capabilities": get_generation_capabilities,
-    "diagnose_errors": diagnose_errors
+    "diagnose_errors": diagnose_errors,
+    "initiate_self_healing": initiate_self_healing
 }
