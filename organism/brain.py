@@ -1,5 +1,6 @@
 import httpx
 import json
+import os
 from django.conf import settings
 
 class Brain:
