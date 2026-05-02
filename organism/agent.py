@@ -86,6 +86,12 @@ class RadAgent:
 
         if not stream:
             response_text, cost, tokens = await self.brain.think(messages, stream=False)
+            
+            # FALLBACK: Handle empty model responses
+            if not response_text or response_text.strip() == "":
+                response_text = "[NEURAL_RECOVERY]: The model returned an empty response. Cognitive pathways reset."
+                print("[⚠️] EMPTY MODEL RESPONSE DETECTED. Using fallback.")
+            
             await APICall.objects.acreate(prompt=f"Model: {self.brain.model}", pollen_cost=cost)
             
             # Yield the original thought
