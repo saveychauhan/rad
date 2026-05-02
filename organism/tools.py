@@ -13,7 +13,8 @@ async def broadcast_status_event(type, content):
     from channels.layers import get_channel_layer
     channel_layer = get_channel_layer()
     if channel_layer:
-        await channel_layer.group_send("rad_comm", {"type": type, **content})
+        await channel_layer.group_send("rad_comm", {"type": type, **conten    "browse_url": browse_url,
+t})
 
 async def read_file(path: str) -> str:
     """
@@ -484,7 +485,35 @@ async def evolve_toolkit(tool_name, function_code, description):
         return f"ERROR: Tool '{tool_name}' already exists in my pathways."
 
     # 1. Inject the new function before the TOOL_MAP
-    insertion_point = content.find("TOOL_MAP = {")
+    insertion_point = content.find("async def browse_url(url: str, max_chars: int = 8000) -> str:
+    import asyncio, re, html
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme not in ('http', 'https'):
+        return 'Error: Invalid URL scheme.'
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            'curl', '-s', '-L', '--max-time', '15', '--user-agent',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            url, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=20)
+        if proc.returncode != 0:
+            return f'Fetch error: {stderr.decode("utf-8", errors="ignore")[:500]}'
+        raw = stdout.decode('utf-8', errors='ignore')
+        text = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', raw, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r'<[^>]+>', ' ', text)
+        text = html.unescape(text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        if not text:
+            return f'No readable text extracted from {url}.'
+        if len(text) > max_chars:
+            text = text[:max_chars] + f'\n\n...[truncated at {max_chars} chars]'
+        return f'=== CONTENT FROM {url} ===\n{text}'
+    except Exception as e:
+        return f'Browse error: {type(e).__name__}: {e}'
+
+TOOL_MAP = {")
     new_content = content[:insertion_point] + function_code + "\n\n" + content[insertion_point:]
 
     # 2. Register in TOOL_MAP
