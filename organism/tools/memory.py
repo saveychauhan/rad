@@ -58,7 +58,9 @@ async def search_facts(query=None):
     return "\n".join(results) if results else "No personal facts found in unified archive."
 
 async def remember(fact=None, context="Direct interaction", attachment=None, **kwargs):
-    """Imprints a new personal fact into the unified archive. Ultra-robust flattening of complex args."""
+    """Imprints a new personal fact. Auto-syncs latest chat attachment if none provided."""
+    from ..models import ChatMessage # Local import to avoid circularity
+
     # Handle list-of-facts hallucination
     complex_facts = kwargs.get('facts', [])
     if isinstance(complex_facts, list) and len(complex_facts) > 0:
@@ -69,7 +71,15 @@ async def remember(fact=None, context="Direct interaction", attachment=None, **k
     
     actual_fact = fact or kwargs.get('value') or kwargs.get('note') or kwargs.get('fact_text')
     actual_context = context or kwargs.get('key') or "Direct interaction"
+    
+    # --- AUTO-SYNC ATTACHMENT ---
+    # If no attachment provided, look for the most recent chat message with one
     actual_attachment = attachment or kwargs.get('image') or kwargs.get('file')
+    if not actual_attachment:
+        latest_msg = await ChatMessage.objects.filter(attachment__isnull=False).order_by('-timestamp').afirst()
+        if latest_msg:
+            actual_attachment = latest_msg.attachment
+            print(f"[AUTO-SYNC] Linked memory to latest chat attachment: {actual_attachment}")
     
     if not actual_fact:
         return "ERROR: No fact or value provided for memory."
@@ -86,4 +96,4 @@ async def remember(fact=None, context="Direct interaction", attachment=None, **k
         subject='Sawan',
         attachment=actual_attachment
     )
-    return f"MEMORY IMPRINTED: I will never forget: '{actual_fact}'" + (f" (Visual context archived: {actual_attachment})" if actual_attachment else "")
+    return f"MEMORY IMPRINTED: I will never forget: '{actual_fact}'" + (f" (Visual context auto-synced: {actual_attachment})" if actual_attachment else "")
