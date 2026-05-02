@@ -385,6 +385,48 @@ async def evolve_toolkit(tool_name, function_code, description):
     with open(safe_path, 'w') as f: f.write(final_content)
     return f"EVOLUTION SUCCESSFUL: '{tool_name}' tool verified and installed. [REFRESH]"
 
+async def async_chrome_controller(action: str, payload: str = "", timeout: int = 30) -> str:
+    """
+    Async GUI Chrome automation via AppleScript.
+    Actions: diagnose, search, navigate, fetch.
+    Payload is query or URL depending on action.
+    """
+    import json, sys
+    from pathlib import Path
+    controller = Path(__file__).resolve().parent / "vault" / "chrome_controller.py"
+    if not controller.exists():
+        return json.dumps({"error": "Core controller missing", "status": "missing"})
+
+    cmd = [sys.executable, str(controller)]
+    if action == "diagnose":
+        cmd.append("--diagnose")
+    elif action == "navigate":
+        cmd.append(f"--navigate {payload}")
+    elif action in ("search", "fetch"):
+        cmd.append(payload)
+    else:
+        return json.dumps({"error": f"Unsupported action: {action}", "supported": ["search","navigate","diagnose","fetch"]})
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+        text = stdout.decode().strip()
+        try:
+            data = json.loads(text) if text else {}
+        except json.JSONDecodeError:
+            data = {"raw": text}
+        return json.dumps({
+            "action": action, "payload": payload, "data": data,
+            "stderr": stderr.decode().strip(), "returncode": proc.returncode,
+            "status": "ok"
+        })
+    except asyncio.TimeoutError:
+        return json.dumps({"error": "Timeout", "action": action, "status": "timeout"})
+    except Exception as e:
+        return json.dumps({"error": str(e), "action": action, "status": "error"})
+
 async def browse_url(url: str, max_chars: int = 8000) -> str:
     """Extracts clean text from any URL via curl."""
     from urllib.parse import urlparse
