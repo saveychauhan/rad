@@ -60,6 +60,20 @@ class RadConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
+        
+        # Handle specialized UI commands
+        if data.get('command') == 'add_task':
+            from .models import RadTask
+            await RadTask.objects.acreate(
+                title=data.get('title'),
+                priority=data.get('priority', 'medium'),
+                is_recurring=data.get('is_recurring', False),
+                recurrence_interval=data.get('recurrence_interval', 'none'),
+                created_by=data.get('created_by', 'sawan')
+            )
+            await self.channel_layer.group_send(self.group_name, {"type": "task_update_event"})
+            return
+
         message = data.get('message')
         attachment = data.get('attachment')
         attachment_type = data.get('attachment_type')
