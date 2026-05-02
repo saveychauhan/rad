@@ -73,6 +73,15 @@ class RadConsumer(AsyncWebsocketConsumer):
             )
             await self.channel_layer.group_send(self.group_name, {"type": "task_update_event"})
             return
+            
+        if data.get('command') == 'stop_generation':
+            with open(os.path.join(settings.BASE_DIR, '.rad_stop_generation'), 'w') as f:
+                f.write(str(time.time()))
+            await self.channel_layer.group_send(self.group_name, {
+                "type": "rad_status_event", 
+                "content": "Interrupting neural pathways..."
+            })
+            return
 
         message = data.get('message')
         attachment = data.get('attachment')
