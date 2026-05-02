@@ -844,10 +844,13 @@
                 <div class="sidebar-title purple">Neural Shift</div>
                 <div class="model-selector-wrap">
                     <select id="model-selector" class="model-select">
-                        <option value="openai">KIMI (Strategic)</option>
-                        <option value="mistral">Mistral (Fast)</option>
-                        <option value="qwen">Qwen (Coding)</option>
-                        <option value="gemini-large">Gemini (Vision/Video)</option>
+                        <option value="openai">KIMI-K2.6 (POLLEN)</option>
+                        <option value="mistral">Mistral (FREE)</option>
+                        <option value="qwen">Qwen (FREE)</option>
+                        <option value="gemini-large">Gemini 2.0 (PAID)</option>
+                        <option value="claude-3.5-sonnet">Claude 3.5 (PAID)</option>
+                        <option value="p1">P1 (POLLEN)</option>
+                        <option value="deepseek">DeepSeek (FREE)</option>
                     </select>
                 </div>
             </div>
@@ -857,25 +860,26 @@
                 <div class="engine-controls">
                     <div class="engine-label">🎨 IMAGE</div>
                     <select id="image-model-selector" class="model-select">
-                        <option value="flux">FLUX (Default)</option>
-                        <option value="flux-pro">FLUX PRO (Ultra)</option>
-                        <option value="dall-e-3">DALL-E 3</option>
-                        <option value="grok-imagine">GROK</option>
-                        <option value="turbo">TURBO (Instant)</option>
+                        <option value="flux">FLUX (FREE)</option>
+                        <option value="flux-pro">FLUX PRO (POLLEN)</option>
+                        <option value="dall-e-3">DALL-E 3 (POLLEN)</option>
+                        <option value="grok-imagine">GROK (POLLEN)</option>
+                        <option value="turbo">TURBO (FREE)</option>
                     </select>
                     
                     <div class="engine-label">🔊 AUDIO</div>
                     <select id="audio-model-selector" class="model-select">
-                        <option value="nova">NOVA (Fast)</option>
-                        <option value="elevenlabs">ELEVENLABS</option>
+                        <option value="nova">NOVA (FREE)</option>
+                        <option value="elevenlabs">ELEVENLABS (POLLEN)</option>
                         <option value="qwen-tts">QWEN TTS</option>
                     </select>
 
                     <div class="engine-label">🎬 VIDEO</div>
                     <select id="video-model-selector" class="model-select">
-                        <option value="p-video">P-VIDEO</option>
-                        <option value="grok-video-pro">GROK VIDEO</option>
-                        <option value="ltx-2">LTX-2</option>
+                        <option value="p-video">P-VIDEO (POLLEN)</option>
+                        <option value="grok-video-pro">GROK VIDEO (POLLEN)</option>
+                        <option value="ltx-2">LTX-2 (FREE)</option>
+                        <option value="nova-reel">NOVA REEL (FREE)</option>
                     </select>
                 </div>
             </div>
@@ -1124,14 +1128,21 @@
 
     async function loadModels() {
         try {
-            const resp = await fetch('/get_models/');
+            const resp = await fetch('/models/');
             const data = await resp.json();
             if (data.models) {
-                modelSelector.innerHTML = data.models.map(m => `
-                    <option value="${m.id}" ${m.id === data.current ? 'selected' : ''}>
-                        ${m.id.toUpperCase()}
-                    </option>
-                `).join('');
+                modelSelector.innerHTML = data.models.map(m => {
+                    let label = "(FREE)";
+                    if (m.is_paid === true) label = "(PAID)";
+                    else if (m.tier === 'pollen' || m.is_paid === false) label = "(POLLEN)";
+                    
+                    const name = m.id.toUpperCase();
+                    return `
+                        <option value="${m.id}" ${m.id === data.current ? 'selected' : ''}>
+                            ${name} ${label}
+                        </option>
+                    `;
+                }).join('');
                 if (data.current) modelStat.innerText = data.current.toUpperCase();
             }
         } catch (e) { console.error("Model load failed", e); }

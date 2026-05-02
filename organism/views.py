@@ -64,15 +64,17 @@ async def chat_view(request):
     return render(request, "organism/chat.html", {"history": chat_history})
 
 async def get_models(request):
-    """Returns the list of available free models."""
+    """Returns the full list of models with tiering information."""
     models = await agent.brain.get_model_info()
-    # Filter for free text models
-    free_text_models = [
-        {"id": mid, "cost": meta['cost']} 
-        for mid, meta in models.items() 
-        if not meta['paid_only']
+    all_models = [
+        {
+            "id": mid, 
+            "is_paid": meta.get('paid_only', False), 
+            "tier": meta.get('tier', 'pollen')
+        } 
+        for mid, meta in models.items()
     ]
-    return JsonResponse({"models": free_text_models, "current": agent.brain.model})
+    return JsonResponse({"models": all_models, "current": agent.brain.model})
 
 async def set_model(request):
     """Updates the active model."""
