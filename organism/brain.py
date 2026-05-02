@@ -10,7 +10,16 @@ class Brain:
         self.url = "https://gen.pollinations.ai/v1/chat/completions"
         self.models_url = "https://gen.pollinations.ai/v1/models"
         self.default_model = getattr(settings, 'POLLINATIONS_MODEL', 'openai')
+        self._model_path = os.path.join(settings.BASE_DIR, '.rad_model')
         
+        # Sync from file on init
+        if os.path.exists(self._model_path):
+            try:
+                with open(self._model_path, 'r') as f:
+                    Brain._current_model = f.read().strip()
+            except Exception:
+                pass
+
         if Brain._current_model is None:
             Brain._current_model = self.default_model
             
@@ -25,6 +34,11 @@ class Brain:
     @model.setter
     def model(self, value):
         Brain._current_model = value
+        try:
+            with open(self._model_path, 'w') as f:
+                f.write(value)
+        except Exception:
+            pass
 
     def set_model(self, model_id):
         self.model = model_id
