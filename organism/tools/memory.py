@@ -58,7 +58,11 @@ async def search_facts(query=None):
     return "\n".join(results) if results else "No personal facts found in unified archive."
 
 async def remember(fact=None, context="Direct interaction", attachment=None, **kwargs):
-    """Imprints a new personal fact. Auto-syncs latest chat attachment if none provided."""
+    """
+    Imprints a new personal fact. 
+    NOTE: If no 'attachment' is provided, the tool will AUTOMATICALLY sync the most recent file/photo from the chat history.
+    Use this to save personal facts, milestones, or people's details.
+    """
     from ..models import ChatMessage # Local import to avoid circularity
 
     # Handle list-of-facts hallucination
