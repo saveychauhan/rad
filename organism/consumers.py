@@ -95,7 +95,6 @@ class RadConsumer(AsyncWebsocketConsumer):
             if attachment and attachment.startswith('data:'):
                 try:
                     from django.core.files.base import ContentFile
-                    from django.conf import settings
 
                     header, b64_content = attachment.split(';base64,')
                     ext = header.split('/')[-1]
@@ -130,9 +129,6 @@ class RadConsumer(AsyncWebsocketConsumer):
                         if msg.attachment.startswith('/media/'):
                             # Read from disk and convert to base64 for Rad
                             try:
-                                import base64
-                                from django.conf import settings
-                                import os
                                 # Remove leading slash
                                 relative_path = msg.attachment.lstrip('/')
                                 full_path = os.path.join(settings.BASE_DIR, relative_path)
