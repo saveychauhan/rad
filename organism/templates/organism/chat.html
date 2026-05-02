@@ -1035,6 +1035,13 @@
 
 <script>
   window.addEventListener('DOMContentLoaded', () => {
+    // Render Markdown for all server-side historical messages
+    document.querySelectorAll('.message .message-content').forEach(el => {
+      const rawMarkdown = el.textContent;
+      el.innerHTML = parseMarkdown(rawMarkdown);
+    });
+    Prism.highlightAllUnder(document.getElementById('chat-window'));
+
     const chat = document.getElementById('chat-window');
     if (chat) chat.scrollTop = chat.scrollHeight;
   });
