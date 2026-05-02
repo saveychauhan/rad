@@ -125,12 +125,16 @@ class RadConsumer(AsyncWebsocketConsumer):
                     print(f"[ERROR] Failed to save attachment: {e}")
 
             # Persist Message with attachment URL
-            await ChatMessage.objects.acreate(
-                role="user", 
-                content=message or "", 
-                attachment=attachment_url or attachment, # Fallback to original if URL not generated
-                attachment_type=attachment_type
-            )
+            try:
+                await ChatMessage.objects.acreate(
+                    role="user", 
+                    content=str(message or ""), 
+                    attachment=attachment_url or attachment,
+                    attachment_type=attachment_type
+                )
+            except Exception as db_err:
+                print(f"[DATABASE_CRITICAL] Failed to persist user message: {db_err}")
+                # We continue so Rad can still respond even if DB is glitchy
             
             # Prepare History (with multimodal awareness)
             history = []
