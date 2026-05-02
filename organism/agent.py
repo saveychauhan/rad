@@ -59,8 +59,16 @@ class RadAgent:
             tool_desc += f"- {name}: {desc}\n"
         
         system_content = f"{soul}\n\n[CURRENT_TIME]: {current_time_str}\n{tool_desc}\n\nTo use a tool, respond with a JSON block: " + '{"tool": "name", "args": {"arg1": "val1"}}'
+        spatial_map = """
+        [NEURAL_DIRECTORY_MAP]:
+        - UI/Templates: organism/templates/organism/chat.html
+        - Logic/Views: organism/views.py
+        - Tools/Brains: organism/tools/, organism/agent.py
+        - Database/Models: organism/models.py
+        - Heartbeat/Dispatcher: organism/tasks.py
+        """
         
-        messages = [{"role": "system", "content": system_content}]
+        messages = [{"role": "system", "content": f"{system_content}\n\n{spatial_map}"}]
         return messages
 
     async def check_pollen_budget(self):
