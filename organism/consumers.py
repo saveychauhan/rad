@@ -91,20 +91,27 @@ class RadConsumer(AsyncWebsocketConsumer):
 
         if message or attachment:
             # Handle attachment storage (base64 -> file)
-            attachment_url = None
             if attachment and attachment.startswith('data:'):
                 try:
                     from django.core.files.base import ContentFile
+                    import os
 
                     header, b64_content = attachment.split(';base64,')
-                    ext = header.split('/')[-1]
+                    ext = header.split('/')[-1].split(';')[0] # Clean extension
                     filename = f"{uuid.uuid4()}.{ext}"
-                    filepath = os.path.join(settings.MEDIA_ROOT, 'attachments', filename)
+                    
+                    # Absolute normalization to prevent ghost paths
+                    target_dir = os.path.join(settings.MEDIA_ROOT, 'attachments')
+                    os.makedirs(target_dir, exist_ok=True)
+                    filepath = os.path.normpath(os.path.join(target_dir, filename))
                     
                     with open(filepath, 'wb') as f:
                         f.write(base64.b64decode(b64_content))
+                        f.flush()
+                        os.fsync(f.fileno()) # Force write to physical disk
                     
                     attachment_url = f"{settings.MEDIA_URL}attachments/{filename}"
+                    print(f"[FILE_SAVE] Successfully archived to {filepath}")
                 except Exception as e:
                     print(f"[ERROR] Failed to save attachment: {e}")
 
