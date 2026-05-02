@@ -251,15 +251,23 @@ def dispatch_missions():
              
         elif decision.startswith("EXECUTE:"):
              instruction = decision.split("EXECUTE:", 1)[1].strip()
-             # Trigger a full thought cycle to use tools
-             from .tasks import process_rad_thought
-             # We simulate a user message from the system to trigger the tool use
-             # But for now, we'll log it as a proactive internal action
+             
+             # Trigger a proactive tool-use cycle
              async_to_sync(channel_layer.group_send)("rad_comm", {
                  "type": "rad_broadcast",
-                 "content": f"[MISSION_EXECUTION]: Rad is performing internal operations: {instruction}"
+                 "content": f"[MISSION_EXECUTION]: Rad is engaging tools to fulfill mission: {instruction}"
              })
-             # Placeholder for full tool-use chain
+             
+             # We feed the instruction back into the brain to let it use tools
+             async def execute_subconscious_tools():
+                 async for chunk in agent.think([
+                     {"role": "system", "content": "You are in SUBCONSCIOUS MODE. Execute the following mission using your tools and report only the final outcome."},
+                     {"role": "user", "content": instruction}
+                 ], stream=False):
+                     # Tools are handled internally by agent.think -> handle_tools
+                     pass
+             
+             async_to_sync(execute_subconscious_tools)()
              
         else:
              thought = decision.split("THINK:", 1)[1].strip() if "THINK:" in decision else decision
