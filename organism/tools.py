@@ -474,6 +474,35 @@ async def stop_task(pid: int):
     except Exception as e:
         return f"Error stopping task: {str(e)}"
 
+async def chrome_drive(action: str, payload: str = "", timeout: int = 45) -> str:
+    """
+    Advanced Chrome puppeteer for macOS. Controls the visible browser.
+    Actions: search (uses Google), navigate (direct URL), fetch (extracts text), diagnose.
+    """
+    controller_path = os.path.join(settings.BASE_DIR, "organism", "vault", "chrome_controller.py")
+    if not os.path.exists(controller_path):
+        return "ERROR: Neural prosthetic (chrome_controller.py) not found in vault."
+
+    cmd = [sys.executable, controller_path]
+    if action == "diagnose":
+        cmd.append("--diagnose")
+    elif action in ("search", "navigate", "fetch"):
+        cmd.append(payload)
+    else:
+        return f"ERROR: Unsupported action: {action}. Use: search, navigate, fetch, or diagnose."
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+        if proc.returncode != 0:
+            return f"CHROME ERROR: {stderr.decode().strip()}"
+        
+        return f"CHROME {action.upper()} SUCCESS:\n{stdout.decode().strip()}"
+    except Exception as e:
+        return f"CHROME SYSTEM ERROR: {str(e)}"
+
 TOOL_MAP = {
     "read_file": read_file,
     "write_file": write_file,
@@ -500,7 +529,7 @@ TOOL_MAP = {
     "initiate_self_healing": initiate_self_healing,
     "evolve_toolkit": evolve_toolkit,
     "browse_url": browse_url,
-    "async_chrome_controller": async_chrome_controller,
     "hibernate": hibernate,
-    "stop_task": stop_task
+    "stop_task": stop_task,
+    "chrome_drive": chrome_drive
 }
