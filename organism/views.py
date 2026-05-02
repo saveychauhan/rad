@@ -49,7 +49,7 @@ async def chat_view(request):
         response = await agent.think(memory)
         
         # 5. Persist Rad's Response
-        await ChatMessage.objects.acreate(role="assistant", content=response)
+        await ChatMessage.objects.acreate(role="assistant", content=response, model=agent.brain.model)
         
         return JsonResponse({"response": response})
     
