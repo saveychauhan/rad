@@ -238,7 +238,6 @@ def dispatch_missions():
         decision = async_to_sync(harvest_decision)()
         
         channel_layer = get_channel_layer()
-        
         if decision.startswith("MANIFEST:"):
              from .tools.manifestation import generate_image
              from .models import ChatMessage
@@ -252,32 +251,46 @@ def dispatch_missions():
              })
              
              async_to_sync(ChatMessage.objects.acreate)(
-                 role="assistant", content=f"Subconscious Manifestation: {result_md}", model="subconscious"
+                 role="assistant", content=f"[MISSION_MANIFEST]: {result_md}", model="subconscious"
              )
              
         elif decision.startswith("EXECUTE:"):
              instruction = decision.split("EXECUTE:", 1)[1].strip()
+             from .models import ChatMessage
              
              async_to_sync(channel_layer.group_send)("rad_comm", {
                  "type": "rad_broadcast",
-                 "content": f"[MISSION_EXECUTION]: Rad is engaging tools to fulfill mission: {instruction}"
+                 "content": f"[MISSION_EXECUTION]: Rad is engaging tools: {instruction}"
              })
              
              async def execute_subconscious_tools():
+                 full_tool_log = []
                  async for chunk in agent.think([
                      {"role": "system", "content": "You are in SUBCONSCIOUS MODE. Execute the mission and report only the final outcome."},
                      {"role": "user", "content": instruction}
                  ], stream=False):
-                     pass
+                     if not any(chunk.startswith(m) for m in ["__META__:", "__COST__:", "[SYSTEM]:"]):
+                        full_tool_log.append(chunk)
+                 return "".join(full_tool_log)
              
-             async_to_sync(execute_subconscious_tools)()
+             tool_outcome = async_to_sync(execute_subconscious_tools)()
+             
+             async_to_sync(ChatMessage.objects.acreate)(
+                 role="assistant", content=f"[MISSION_EXECUTION_RESULT]: {tool_outcome}", model="subconscious"
+             )
              
         else:
              thought = decision.split("THINK:", 1)[1].strip() if "THINK:" in decision else decision
+             from .models import ChatMessage
+             
              async_to_sync(channel_layer.group_send)("rad_comm", {
                  "type": "rad_broadcast",
                  "content": f"[MISSION_THOUGHT]: {thought}"
              })
+             
+             async_to_sync(ChatMessage.objects.acreate)(
+                 role="assistant", content=f"[MISSION_THOUGHT]: {thought}", model="subconscious"
+             )
 
         task.status = 'done'
         task.completed_at = timezone.now()
