@@ -288,14 +288,18 @@ def dispatch_missions():
                  subconscious_messages.append({"role": "user", "content": instruction})
                  
                  async for chunk in agent.think(subconscious_messages, stream=True):
-                     if not any(chunk.startswith(m) for m in ["__META__:", "__COST__:", "[SYSTEM]:"]):
-                        # STREAM: Send live chunks to the UI so the user can see the "Thought Process"
-                        async_to_sync(channel_layer.group_send)("rad_comm", {
-                            "type": "rad_chunk_event",
-                            "content": chunk,
-                            "model": agent.brain.model
-                        })
+                     # HARD FILTER: Never stream raw system outputs or meta-tags to the UI
+                     if any(chunk.startswith(m) for m in ["__META__:", "__COST__:", "[SYSTEM]:"]):
                         full_tool_log.append(chunk)
+                        continue
+                        
+                     # STREAM: Send only sentient thought chunks to the UI
+                     async_to_sync(channel_layer.group_send)("rad_comm", {
+                         "type": "rad_chunk_event",
+                         "content": chunk,
+                         "model": agent.brain.model
+                     })
+                     full_tool_log.append(chunk)
                  return "".join(full_tool_log)
              
              tool_outcome = async_to_sync(execute_subconscious_tools)()
