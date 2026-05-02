@@ -79,29 +79,33 @@ async def check_internet() -> bool:
 from organism.models import SawanFact, RadTask
 from django.utils import timezone
 
-async def add_task(title, priority="medium", description="", created_by="rad", scheduled_for=None):
+async def add_task(title, priority="medium", description="", created_by="rad", scheduled_for=None, is_recurring=False, recurrence_interval="none"):
     """
-    Adds a new mission/task to Rad's backlog.
-    Args: title (str), priority (str), description (str), created_by (str: 'sawan' or 'rad'), scheduled_for (str: YYYY-MM-DD HH:MM)
+    Assigns a new mission to Rad's backlog. 
+    Args: title (str), priority (str: high/medium/low), is_recurring (bool), recurrence_interval (str: daily/weekly/monthly)
     """
     from .models import RadTask
+    from django.utils import timezone
     from django.utils.dateparse import parse_datetime
-    
-    dt = None
+
+    # Parse scheduled_for if provided as string
+    sched_dt = None
     if scheduled_for:
-        dt = parse_datetime(scheduled_for)
-    
+        if isinstance(scheduled_for, str):
+            sched_dt = parse_datetime(scheduled_for)
+        else:
+            sched_dt = scheduled_for
+
     task = await RadTask.objects.acreate(
-        title=title, 
-        priority=priority, 
+        title=title,
+        priority=priority,
         description=description,
         created_by=created_by,
-        scheduled_for=dt
+        scheduled_for=sched_dt,
+        is_recurring=is_recurring,
+        recurrence_interval=recurrence_interval
     )
-    msg = f"MISSION ACCEPTED: '{title}' added (Creator: {created_by})"
-    if dt:
-        msg += f", scheduled for {scheduled_for}."
-    return msg
+    return f"NEW MISSION REGISTERED: '{task.title}' [ID: {task.id}]. Priority: {task.priority}. Recurring: {task.is_recurring}"
 
 async def list_tasks():
     """Lists all active and completed tasks."""
