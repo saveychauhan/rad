@@ -69,21 +69,8 @@ class RadAgent:
 
     async def think(self, messages, stream=False, depth=0):
         """Processes messages through the brain with a recursion limit to prevent loops."""
-        if depth > 15:
-            yield "ERROR: Neural recursion limit exceeded (depth > 15). Safety brake engaged."
-            return
-
-        if not await check_internet():
-            yield "ERROR: Hibernation mode active. Internet connection required."
-            return
-            
-        allowed, used = await self.check_pollen_budget()
-        if not allowed:
-            yield f"ERROR: Low on Pollen energy ({used:.2f}/{self.pollen_limit}). Recharging..."
-            return
-
-        if depth > 5:
-            yield "ERROR: Max neural recursion depth reached. Safety shutdown initiated."
+        if depth > 20:
+            yield "ERROR: Max neural recursion limit exceeded (depth > 20). Safety brake engaged to prevent cognitive loops."
             return
 
         if not stream:
