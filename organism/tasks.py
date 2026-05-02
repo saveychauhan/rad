@@ -136,7 +136,8 @@ def process_rad_thought(message_content, history, image_model=None, audio_model=
                 full_response += chunk
                 await channel_layer.group_send(group_name, {
                     "type": "rad_chunk_event",
-                    "content": chunk
+                    "content": chunk,
+                    "model": agent.brain.model
                 })
 
             # Save assistant response
