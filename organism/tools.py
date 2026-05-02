@@ -398,27 +398,37 @@ async def generate_media(prompt, type="audio", model=None):
         url = f"https://gen.pollinations.ai/video/{encoded_prompt}?model={selected_model}"
         return f"VIDEO GENERATED: Watch here: {url}"
 
+# Global cache for manifestation capabilities
+_MEDIA_ENGINES_CACHE = None
+
 async def get_generation_capabilities():
     """
-    Returns the dynamic list of available models for image, audio, and video generation.
+    Returns the list of available models for image, audio, and video generation.
+    Cached per supervisor session.
     """
+    global _MEDIA_ENGINES_CACHE
+    if _MEDIA_ENGINES_CACHE is not None:
+        return _MEDIA_ENGINES_CACHE
+
+    print("[#] REFRESHING MEDIA ENGINE CACHE...")
     async with httpx.AsyncClient() as client:
         try:
             img_resp = await client.get("https://gen.pollinations.ai/image/models")
             aud_resp = await client.get("https://gen.pollinations.ai/audio/models")
             vid_resp = await client.get("https://gen.pollinations.ai/video/models")
             
-            return {
+            _MEDIA_ENGINES_CACHE = {
                 "image_models": img_resp.json(),
                 "audio_models": aud_resp.json(),
                 "video_models": vid_resp.json()
             }
+            return _MEDIA_ENGINES_CACHE
         except Exception:
             # Fallback to static if API is unreachable
             return {
-                "image_models": [{"id": "flux", "paid_only": false}],
-                "audio_models": [{"id": "nova", "paid_only": false}],
-                "video_models": [{"id": "p-video", "paid_only": true}]
+                "image_models": [{"id": "flux", "paid_only": False}],
+                "audio_models": [{"id": "nova", "paid_only": False}],
+                "video_models": [{"id": "p-video", "paid_only": True}]
             }
 
 async def diagnose_errors(limit=5):

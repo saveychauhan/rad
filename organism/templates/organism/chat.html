@@ -1188,9 +1188,33 @@
         titleInput.value = '';
     }
 
+    async function loadEngines() {
+        try {
+            const resp = await fetch('/engines/');
+            const data = await resp.json();
+            
+            const populate = (id, models) => {
+                const el = document.getElementById(id);
+                // Sort: Pollen (paid_only: false) first, then Paid
+                models.sort((a, b) => (a.paid_only === b.paid_only) ? 0 : (a.paid_only ? 1 : -1));
+                
+                el.innerHTML = models.map(m => {
+                    const label = m.paid_only ? "(PAID)" : "(POLLEN)";
+                    const modelId = typeof m === 'string' ? m : m.id || m.name;
+                    return `<option value="${modelId}">${modelId.toUpperCase()} ${label}</option>`;
+                }).join('');
+            };
+
+            if (data.image_models) populate('image-model-selector', data.image_models);
+            if (data.audio_models) populate('audio-model-selector', data.audio_models);
+            if (data.video_models) populate('video-model-selector', data.video_models);
+        } catch (e) { console.error("Engines load failed", e); }
+    }
+
     connect();
     loadTasks();
     loadModels();
+    loadEngines();
 
     // Scroll to bottom on load
     const scrollToBottom = () => { chatWindow.scrollTop = chatWindow.scrollHeight; };
