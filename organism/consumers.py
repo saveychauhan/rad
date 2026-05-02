@@ -147,7 +147,7 @@ class RadConsumer(AsyncWebsocketConsumer):
                         msg_data = {
                             "role": msg.role,
                             "content": [
-                                {"type": "text", "text": content},
+                                {"type": "text", "text": f"{content}\n[PERSISTENT_ATTACHMENT_PATH: {msg.attachment}]"},
                                 {"type": "image_url", "image_url": {"url": image_data}}
                             ]
                         }
