@@ -843,6 +843,9 @@
                 userInput.placeholder = "Initiate thought transfer...";
                 statusText.innerText = "ONLINE";
                 loadTasks();
+                if (window.pendingRefresh && Object.keys(activeStreams).length === 0) {
+                    window.location.reload();
+                }
             } else if (data.type === 'rad_broadcast') {
                 appendMessage('rad', data.content, null, null, data.model);
                 loadTasks();
@@ -851,7 +854,12 @@
             } else if (data.type === 'brain_shift') {
                 modelSelector.value = data.model;
             } else if (data.type === 'force_refresh') {
-                window.location.reload();
+                if (Object.keys(activeStreams).length > 0) {
+                    console.log("RAD: Refresh deferred until neural cycles complete.");
+                    window.pendingRefresh = true;
+                } else {
+                    window.location.reload();
+                }
             }
         };
         chatSocket.onclose = () => { statusText.innerText = "OFFLINE"; setTimeout(connect, 2000); };
