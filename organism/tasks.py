@@ -202,7 +202,11 @@ def dispatch_missions():
     overdue_tasks = RadTask.objects.filter(status='todo', scheduled_for__lte=now)
     
     for task in overdue_tasks:
-        print(f"[HEARTBEAT] Neural Decision Phase for Mission #{task.id}: {task.title}")
+        print(f"[HEARTBEAT] Igniting Mission #{task.id}: {task.title}")
+        
+        # LOCK: Mark as doing immediately to prevent heartbeat loops
+        task.status = 'doing'
+        task.save()
         
         # Consult the Brain to decide the path
         from .agent import RadAgent
@@ -220,11 +224,9 @@ def dispatch_missions():
         DECISION:
         """
         
-        # We need a helper to consume the async generator
         async def harvest_decision():
             full_text = ""
             async for chunk in agent.think([{"role": "system", "content": decision_prompt}], stream=False):
-                # Filter out system meta-tags
                 if not any(chunk.startswith(m) for m in ["__META__:", "__COST__:", "[SYSTEM]:"]):
                     full_text += chunk
             return full_text.strip()
@@ -252,19 +254,16 @@ def dispatch_missions():
         elif decision.startswith("EXECUTE:"):
              instruction = decision.split("EXECUTE:", 1)[1].strip()
              
-             # Trigger a proactive tool-use cycle
              async_to_sync(channel_layer.group_send)("rad_comm", {
                  "type": "rad_broadcast",
                  "content": f"[MISSION_EXECUTION]: Rad is engaging tools to fulfill mission: {instruction}"
              })
              
-             # We feed the instruction back into the brain to let it use tools
              async def execute_subconscious_tools():
                  async for chunk in agent.think([
-                     {"role": "system", "content": "You are in SUBCONSCIOUS MODE. Execute the following mission using your tools and report only the final outcome."},
+                     {"role": "system", "content": "You are in SUBCONSCIOUS MODE. Execute the mission and report only the final outcome."},
                      {"role": "user", "content": instruction}
                  ], stream=False):
-                     # Tools are handled internally by agent.think -> handle_tools
                      pass
              
              async_to_sync(execute_subconscious_tools)()
