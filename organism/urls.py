@@ -8,5 +8,5 @@ urlpatterns = [
     path('models/', views.get_models, name='get_models'),
     path('engines/', views.get_media_engines, name='get_media_engines'),
     path('set_model/', views.set_model, name='set_model'),
-    path('tasks/', views.get_tasks, name='get_tasks'),
+    path('api/tasks/', views.get_tasks, name='get_tasks'),
 ]
