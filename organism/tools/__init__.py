@@ -38,7 +38,7 @@ TOOL_MAP = {
     "save_to_vault": save_to_vault,         # Archives research/blueprints to Vault/DB
     "remember": remember,                   # Imprints a fact about the Creator (Sawan)
     "search_facts": search_facts,           # Retrieves learned facts about Sawan
-    "query_memory": query_memory,           # Searches long-term research database
+    "query_memory": query_memory,           # Searches long-term research database (supports date_from/date_to: YYYY-MM-DD)
 
     # --- Web & Research (web.py) ---
     "search_web": search_web,               # Fast DuckDuckGo search
