@@ -233,10 +233,15 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python3 chrome_controller.py <query_or_url>")
         print("       python3 chrome_controller.py --diagnose")
+        print("       python3 chrome_controller.py --navigate <url>")
         sys.exit(1)
     arg = " ".join(sys.argv[1:])
     if arg == "--diagnose":
         print(json.dumps(diagnose(), indent=2, ensure_ascii=False))
+    elif arg.startswith("--navigate "):
+        url = arg[11:].strip()
+        navigate(url)
+        print(json.dumps({"status": "navigated", "url": url}, indent=2, ensure_ascii=False))
     elif arg.startswith("http"):
         print(fetch_url(arg))
     else:
