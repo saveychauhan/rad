@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Sum
 from organism.brain import Brain
-from organism.models import APICall, SawanFact, ChatMessage
+from organism.models import APICall, ChatMessage
 from organism.tools import TOOL_MAP, check_internet
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
