@@ -62,7 +62,7 @@ def run_command_task(command, task_id=None):
         return str(e)
 
 @shared_task
-def process_rad_thought(message_content, history, image_model=None, audio_model=None, video_model=None):
+def process_rad_thought(message_content, history, image_model=None, audio_model=None, video_model=None, stream_id=None):
     """
     Offloads Rad's complex thinking and tool execution to Celery.
     Streams results back to the UI via WebSockets.

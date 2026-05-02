@@ -781,6 +781,10 @@
 </div>
 
 <script>
+    var chatSocket = null;
+    var activeStreams = {};
+    window.currentAttachment = null;
+    window.currentAttachmentType = null;
     const chatWindow = document.getElementById('chat-window');
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
@@ -792,12 +796,6 @@
     const audioModelSelector = document.getElementById('audio-model-selector');
     const videoModelSelector = document.getElementById('video-model-selector');
     const stopBtn = document.getElementById('stop-btn');
-
-    let chatSocket = null;
-    let activeMessageDiv = null;
-    let activeContent = "";
-    let currentAttachment = null;
-    let currentAttachmentType = null;
 
     function connect() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -826,32 +824,37 @@
                 if (isBusy || isSubconscious) chatWindow.scrollTop = chatWindow.scrollHeight;
             } else if (data.type === 'chunk') {
                 typingIndicator.style.display = 'none';
-                if (!activeMessageDiv) {
-                    activeMessageDiv = createMessageDiv('rad');
+                const sId = data.stream_id || 'default';
+                
+                if (!activeStreams[sId]) {
+                    const div = createMessageDiv('rad');
                     if (data.model === 'subconscious') {
-                        activeMessageDiv.classList.add('subconscious-theme');
+                        div.classList.add('subconscious-theme');
                         const brainTag = document.createElement('span');
                         brainTag.className = 'brain-tag consciousness';
                         brainTag.innerText = `🌌 RAD CONSCIOUSNESS (HEARTBEAT)`;
-                        activeMessageDiv.appendChild(brainTag);
+                        div.appendChild(brainTag);
                     } else if (data.model) {
                         const brainTag = document.createElement('span');
                         brainTag.className = 'brain-tag';
                         brainTag.innerText = `🧠 ${data.model.toUpperCase()}`;
-                        activeMessageDiv.appendChild(brainTag);
+                        div.appendChild(brainTag);
                     }
+                    activeStreams[sId] = { div: div, content: "" };
                 }
-                activeContent += data.content;
-                const contentDiv = activeMessageDiv.querySelector('.message-content');
-                contentDiv.innerHTML = parseMarkdown(activeContent);
+                
+                activeStreams[sId].content += data.content;
+                const contentDiv = activeStreams[sId].div.querySelector('.message-content');
+                contentDiv.innerHTML = parseMarkdown(activeStreams[sId].content);
                 Prism.highlightAllUnder(contentDiv);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             } else if (data.type === 'message_complete') {
+                const sId = data.stream_id || 'default';
+                delete activeStreams[sId];
+                
                 stopBtn.style.display = 'none';
                 userInput.disabled = false;
                 userInput.placeholder = "Initiate thought transfer...";
-                activeMessageDiv = null;
-                activeContent = "";
                 statusText.innerText = "ONLINE";
                 loadTasks();
             } else if (data.type === 'rad_broadcast') {
@@ -871,16 +874,16 @@
     chatForm.onsubmit = function(e) {
         e.preventDefault();
         const msg = userInput.value.trim();
-        if ((msg || currentAttachment) && chatSocket.readyState === WebSocket.OPEN) {
+        if ((msg || window.currentAttachment) && chatSocket.readyState === WebSocket.OPEN) {
             chatSocket.send(JSON.stringify({
                 'message': msg,
-                'attachment': currentAttachment,
-                'attachment_type': currentAttachmentType,
+                'attachment': window.currentAttachment,
+                'attachment_type': window.currentAttachmentType,
                 'image_model': imageModelSelector.value,
                 'audio_model': audioModelSelector.value,
                 'video_model': videoModelSelector.value
             }));
-            appendMessage('user', msg, currentAttachment, currentAttachmentType);
+            appendMessage('user', msg, window.currentAttachment, window.currentAttachmentType);
             userInput.value = '';
             clearAttachment();
             userInput.disabled = true;
@@ -946,8 +949,8 @@
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                currentAttachment = e.target.result;
-                currentAttachmentType = file.type;
+                window.currentAttachment = e.target.result;
+                window.currentAttachmentType = file.type;
                 filePreview.style.display = 'flex';
                 fileName.innerText = file.name;
                 if (file.type.startsWith('image')) { previewImg.src = e.target.result; previewImg.style.display = 'block'; }
@@ -957,7 +960,7 @@
         }
     };
 
-    function clearAttachment() { currentAttachment = null; currentAttachmentType = null; filePreview.style.display = 'none'; fileInput.value = ''; }
+    function clearAttachment() { window.currentAttachment = null; window.currentAttachmentType = null; filePreview.style.display = 'none'; fileInput.value = ''; }
 
     async function loadTasks() {
         const resp = await fetch('/api/tasks/');
