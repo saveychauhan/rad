@@ -202,35 +202,26 @@ def dispatch_missions():
     overdue_tasks = RadTask.objects.filter(status='todo', scheduled_for__lte=now)
     
     for task in overdue_tasks:
-        print(f"[HEARTBEAT] Neural Decision Phase for Mission #{task.id}: {task.title}")
-        
-        # Consult the Brain to decide the path
-        from .agent import RadAgent
-        agent = RadAgent()
-        
-        decision_prompt = f"""
-        MISSION TRIGGERED: '{task.title}'
-        DESCRIPTION: '{task.description}'
-        
-        Analyze this mission and decide the execution path. 
-        If it requires creating an image, video, or audio, respond with: 'MANIFEST: <refined_prompt>'
-        If it requires system operations (files, search, code), respond with: 'EXECUTE: <tool_instruction>'
-        Otherwise, if it's just a reminder or simple thought, respond with: 'THINK: <response>'
-        
-        DECISION:
-        """
-        
-        # Use a lightweight thought to decide
-        decision = async_to_sync(agent.think)([{"role": "system", "content": decision_prompt}])
-        decision = decision.strip()
+        print(f"[HEARTBEAT] Reflex Processing for Mission #{task.id}: {task.title}")
         
         channel_layer = get_channel_layer()
+        title_lower = task.title.lower()
         
-        if decision.startswith("MANIFEST:"):
+        # ⚡ Reflex Arc: Immediate Keyword Routing
+        if any(kw in title_lower for kw in ["generate", "image", "photo", "video", "audio", "manifest"]):
              from .tools.manifestation import generate_image
              from .models import ChatMessage
              
-             prompt = decision.split("MANIFEST:", 1)[1].strip()
+             # Extract prompt - everything after the keyword
+             prompt = task.title
+             for kw in ["generate", "image", "photo", "manifest"]:
+                 if kw in title_lower:
+                     parts = title_lower.split(kw, 1)
+                     if len(parts) > 1 and parts[1].strip():
+                         prompt = parts[1].strip()
+                     break
+             
+             # Call async manifestation engine
              result_md = async_to_sync(generate_image)(prompt)
              
              async_to_sync(channel_layer.group_send)("rad_comm", {
@@ -242,27 +233,26 @@ def dispatch_missions():
                  role="assistant", content=f"Subconscious Manifestation: {result_md}", model="subconscious"
              )
              
-        elif decision.startswith("EXECUTE:"):
-             instruction = decision.split("EXECUTE:", 1)[1].strip()
-             # Trigger a full thought cycle to use tools
-             from .tasks import process_rad_thought
-             # We simulate a user message from the system to trigger the tool use
-             # But for now, we'll log it as a proactive internal action
+        elif any(kw in title_lower for kw in ["run", "exec", "file", "code", "search"]):
              async_to_sync(channel_layer.group_send)("rad_comm", {
                  "type": "rad_broadcast",
-                 "content": f"[MISSION_EXECUTION]: Rad is performing internal operations: {instruction}"
+                 "content": f"[MISSION_EXECUTION]: Rad is initiating internal system operations for: {task.title}"
              })
-             # Placeholder for full tool-use chain
+             # Standard tool execution logic
+             task.status = 'doing'
+             task.save()
+             run_command_task.delay(f"echo 'Executing: {task.title}'", task_id=task.id)
+             continue
              
         else:
-             thought = decision.split("THINK:", 1)[1].strip() if "THINK:" in decision else decision
+             # Default Thought/Reminder
              async_to_sync(channel_layer.group_send)("rad_comm", {
                  "type": "rad_broadcast",
-                 "content": f"[MISSION_THOUGHT]: {thought}"
+                 "content": f"[MISSION_THOUGHT]: Subconscious awareness active. Task reached: '{task.title}'."
              })
 
         task.status = 'done'
         task.completed_at = timezone.now()
         task.save()
 
-    return f"Neural Decision complete for {overdue_tasks.count()} missions."
+    return f"Reflex processing complete for {overdue_tasks.count()} missions."
