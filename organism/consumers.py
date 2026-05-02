@@ -6,6 +6,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.conf import settings
+import base64
+import uuid
 from .agent import RadAgent
 from .models import ChatMessage
 
@@ -92,11 +94,8 @@ class RadConsumer(AsyncWebsocketConsumer):
             attachment_url = None
             if attachment and attachment.startswith('data:'):
                 try:
-                    import base64
-                    import uuid
                     from django.core.files.base import ContentFile
                     from django.conf import settings
-                    import os
 
                     header, b64_content = attachment.split(';base64,')
                     ext = header.split('/')[-1]
