@@ -65,9 +65,10 @@ class RadConsumer(AsyncWebsocketConsumer):
         
         # Handle specialized UI commands
         if data.get('command') == 'add_task':
-            from .models import RadTask
-            await RadTask.objects.acreate(
-                title=data.get('title'),
+            from .models import RadTask, ChatMessage
+            title = data.get('title')
+            task = await RadTask.objects.acreate(
+                title=title,
                 priority=data.get('priority', 'medium'),
                 is_recurring=data.get('is_recurring', False),
                 recurrence_interval=data.get('recurrence_interval', 'none'),
@@ -75,6 +76,15 @@ class RadConsumer(AsyncWebsocketConsumer):
                 created_by=data.get('created_by', 'sawan')
             )
             await self.channel_layer.group_send(self.group_name, {"type": "task_update_event"})
+            
+            # PROACTIVE ACKNOWLEDGEMENT: Rad thinks about the new mission immediately
+            from .tasks import process_rad_thought
+            # We don't save the 'user' message here to keep the history clean, 
+            # we just let Rad acknowledge the new mission.
+            await self.channel_layer.group_send(self.group_name, {
+                "type": "rad_broadcast",
+                "content": f"[MISSION_ASSIGNED]: Sawan has deployed a new mission: '{title}'. Synchronizing neural pathways..."
+            })
             return
             
         if data.get('command') == 'stop_generation':
