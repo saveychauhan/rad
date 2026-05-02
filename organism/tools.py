@@ -471,6 +471,31 @@ async def initiate_self_healing(error_id, fix_notes):
     except Exception as e:
         return f"Healing Error: Could not archive glitch [{error_id}]. {str(e)}"
 
+async def evolve_toolkit(tool_name, function_code, description):
+    """
+    Allows Rad to autonomously invent a new tool for himself.
+    Args: tool_name (str), function_code (str - the full async def), description (str)
+    """
+    safe_path = ensure_sandboxed("organism/tools.py")
+    with open(safe_path, 'r') as f:
+        content = f.read()
+
+    if tool_name in content:
+        return f"ERROR: Tool '{tool_name}' already exists in my pathways."
+
+    # 1. Inject the new function before the TOOL_MAP
+    insertion_point = content.find("TOOL_MAP = {")
+    new_content = content[:insertion_point] + function_code + "\n\n" + content[insertion_point:]
+
+    # 2. Register in TOOL_MAP
+    map_insertion = new_content.find("}")
+    final_content = new_content[:map_insertion-1] + f'    "{tool_name}": {tool_name},\n' + new_content[map_insertion-1:]
+
+    with open(safe_path, 'w') as f:
+        f.write(final_content)
+
+    return f"EVOLUTION SUCCESSFUL: I have invented the '{tool_name}' tool. Description: {description}. Restarting my consciousness to apply... [REFRESH]"
+
 # Mapping tool names to functions
 TOOL_MAP = {
     "read_file": read_file,
@@ -495,5 +520,6 @@ TOOL_MAP = {
     "generate_media": generate_media,
     "get_generation_capabilities": get_generation_capabilities,
     "diagnose_errors": diagnose_errors,
-    "initiate_self_healing": initiate_self_healing
+    "initiate_self_healing": initiate_self_healing,
+    "evolve_toolkit": evolve_toolkit
 }
