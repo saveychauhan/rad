@@ -3,19 +3,25 @@ from django.db import models
 from organism.models import RadTask
 from .utils import broadcast_status_event
 
-async def add_task(title, priority="medium", description="", created_by="rad", scheduled_for=None, is_recurring=False, recurrence_interval="none"):
+async def add_task(title, scheduled_for, priority="medium", description="", created_by="rad", is_recurring=False, recurrence_interval="none"):
     """
     Assigns a new mission to Rad's backlog. 
+    MANDATORY: scheduled_for (str: ISO format like '2025-12-31 14:00')
     Args: title (str), priority (str: high/medium/low), is_recurring (bool), recurrence_interval (str: daily/weekly/monthly)
     """
     from django.utils.dateparse import parse_datetime
+    
+    if not scheduled_for:
+        return "ERROR: 'scheduled_for' is mandatory. Please provide a date and time."
 
     sched_dt = None
-    if scheduled_for:
-        if isinstance(scheduled_for, str):
-            sched_dt = parse_datetime(scheduled_for)
-        else:
-            sched_dt = scheduled_for
+    if isinstance(scheduled_for, str):
+        sched_dt = parse_datetime(scheduled_for)
+    else:
+        sched_dt = scheduled_for
+
+    if not sched_dt:
+        return f"ERROR: Invalid date format for '{scheduled_for}'. Use YYYY-MM-DD HH:MM."
 
     task = await RadTask.objects.acreate(
         title=title,
@@ -26,7 +32,7 @@ async def add_task(title, priority="medium", description="", created_by="rad", s
         is_recurring=is_recurring,
         recurrence_interval=recurrence_interval
     )
-    return f"NEW MISSION REGISTERED: '{task.title}' [ID: {task.id}]. Priority: {task.priority}. Recurring: {task.is_recurring}"
+    return f"NEW MISSION REGISTERED: '{task.title}' [ID: {task.id}]. Scheduled for: {task.scheduled_for.strftime('%Y-%m-%d %H:%M')}."
 
 async def list_tasks():
     """Lists all active and completed tasks with status icons."""

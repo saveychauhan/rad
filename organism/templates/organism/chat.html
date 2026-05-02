@@ -878,28 +878,25 @@
                 <div class="engine-controls">
                     <div class="engine-label">🎨 IMAGE</div>
                     <select id="image-model-selector" class="model-select">
-                        <option value="flux">FLUX (POLLEN)</option>
-                        <option value="turbo">TURBO (POLLEN)</option>
-                        <option value="p-image">P-IMAGE (POLLEN)</option>
-                        <option value="flux-pro">FLUX PRO (PAID)</option>
-                        <option value="dall-e-3">DALL-E 3 (PAID)</option>
-                        <option value="grok-imagine">GROK (PAID)</option>
+                        <option value="flux">FLUX (BALANCED)</option>
+                        <option value="flux-realism">FLUX REALISM (HIGH-FI)</option>
+                        <option value="flux-anime">FLUX ANIME (STYLIZED)</option>
+                        <option value="flux-3d">FLUX 3D (CINEMATIC)</option>
+                        <option value="flux-pixel">FLUX PIXEL (ART)</option>
+                        <option value="any-dark">ANY DARK (MOODY)</option>
                     </select>
                     
                     <div class="engine-label">🔊 AUDIO</div>
                     <select id="audio-model-selector" class="model-select">
-                        <option value="nova">NOVA (POLLEN)</option>
-                        <option value="qwen-tts">QWEN TTS (POLLEN)</option>
-                        <option value="elevenlabs">ELEVENLABS (PAID)</option>
-                        <option value="acestep">ACESTEP (PAID)</option>
+                        <option value="nova">NOVA (FAST)</option>
+                        <option value="qwen-tts">QWEN TTS (NATURAL)</option>
                     </select>
-
+ 
                     <div class="engine-label">🎬 VIDEO</div>
                     <select id="video-model-selector" class="model-select">
-                        <option value="nova-reel">NOVA REEL (POLLEN)</option>
-                        <option value="ltx-2">LTX-2 (POLLEN)</option>
-                        <option value="p-video">P-VIDEO (PAID)</option>
-                        <option value="grok-video-pro">GROK VIDEO (PAID)</option>
+                        <option value="nova-reel">NOVA REEL (FAST)</option>
+                        <option value="ltx-2">LTX-2 (STABLE)</option>
+                        <option value="p-video">P-VIDEO (ADVANCED)</option>
                     </select>
                 </div>
             </div>
@@ -930,10 +927,16 @@
     const typingIndicator = document.getElementById('typing-indicator');
     const modelSelector = document.getElementById('model-selector');
     const modelStat = document.getElementById('model-stat');
+    const imageModelSelector = document.getElementById('image-model-selector');
+    const audioModelSelector = document.getElementById('audio-model-selector');
+    const videoModelSelector = document.getElementById('video-model-selector');
+    const stopBtn = document.getElementById('stop-btn');
 
     let chatSocket = null;
     let activeMessageDiv = null;
     let activeContent = "";
+    let currentAttachment = null;
+    let currentAttachmentType = null;
 
     function connect() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -999,31 +1002,51 @@
             }
         };
 
-        chatSocket.onclose = function(e) {
-            statusText.innerText = "LINK LOST";
+        chatSocket.onclose = (e) => {
+            statusText.innerText = "OFFLINE";
             setTimeout(connect, 2000);
         };
-
-        chatSocket.onerror = function(e) {
-            statusText.innerText = "SIGNAL ERROR";
-        };
     }
 
-    function parseMarkdown(content) {
-        try {
-            return marked.parse(content);
-        } catch (e) {
-            console.error("Markdown parse error", e);
-            return content.replace(/\n/g, '<br>');
+    chatForm.onsubmit = function(e) {
+        e.preventDefault();
+        const msg = userInput.value.trim();
+        if ((msg || currentAttachment) && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(jsonStr({
+                'message': msg,
+                'attachment': currentAttachment,
+                'attachment_type': currentAttachmentType,
+                'image_model': imageModelSelector.value,
+                'audio_model': audioModelSelector.value,
+                'video_model': videoModelSelector.value
+            }));
+            appendMessage('user', msg, currentAttachment, currentAttachmentType);
+            userInput.value = '';
+            clearAttachment();
+            userInput.disabled = true;
+            userInput.placeholder = "Neural pathway processing...";
+            stopBtn.style.display = 'block';
         }
-    }
+    };
 
-    function createMessageDiv(role, attachment = null, attachmentType = null) {
+    function jsonStr(obj) { return JSON.stringify(obj); }
+
+    function createMessageDiv(role) {
         const div = document.createElement('div');
         div.className = `message ${role}-message msg-animate`;
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        div.appendChild(content);
+        chatWindow.appendChild(div);
+        return div;
+    }
+
+    function appendMessage(role, text, attachment, type, model) {
+        const div = createMessageDiv(role);
+        const contentDiv = div.querySelector('.message-content');
         
         if (attachment) {
-            if (attachmentType && attachmentType.startsWith('image/')) {
+            if (type && type.startsWith('image')) {
                 const img = document.createElement('img');
                 img.src = attachment;
                 img.className = 'message-attachment';
@@ -1031,249 +1054,137 @@
                 img.style.borderRadius = '8px';
                 img.style.marginBottom = '10px';
                 img.style.border = '1px solid var(--border)';
-                div.appendChild(img);
+                div.insertBefore(img, contentDiv);
             } else {
                 const link = document.createElement('a');
                 link.href = attachment;
                 link.target = "_blank";
-                link.className = 'badge badge-doing';
-                link.style.display = 'inline-block';
-                link.style.marginBottom = '10px';
-                link.style.textDecoration = 'none';
-                link.innerText = `📎 ATTACHMENT (${attachmentType})`;
-                div.appendChild(link);
+                link.className = "badge badge-doing";
+                link.style.display = "inline-block";
+                link.style.marginBottom = "10px";
+                link.style.textDecoration = "none";
+                link.innerText = `📎 ATTACHMENT (${type})`;
+                div.insertBefore(link, contentDiv);
             }
         }
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-        div.appendChild(contentDiv);
-        chatWindow.appendChild(div);
-        return div;
-    }
-
-    function appendMessage(role, content, attachment = null, attachmentType = null, model = null) {
-        // Detect system/tool messages inline
-        if (content.startsWith('[SYSTEM]:') || content.startsWith('Tool [')) {
-            const div = createMessageDiv('system');
-            div.querySelector('.message-content').textContent = content;
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-            return;
-        }
-
-        const div = createMessageDiv(role, attachment, attachmentType);
         
         if (model) {
             const brainTag = document.createElement('span');
             brainTag.className = 'brain-tag';
             brainTag.innerText = `🧠 ${model.toUpperCase()}`;
-            div.appendChild(brainTag);
+            div.insertBefore(brainTag, contentDiv);
         }
-
-        div.querySelector('.message-content').innerHTML = parseMarkdown(content);
-        Prism.highlightAllUnder(div);
+        
+        contentDiv.innerHTML = parseMarkdown(text);
+        Prism.highlightAllUnder(contentDiv);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
+    function parseMarkdown(text) {
+        if (!text) return "";
+        return marked.parse(text);
+    }
+
+    // Attachment Handling
     const fileInput = document.getElementById('file-input');
     const filePreview = document.getElementById('file-preview');
     const previewImg = document.getElementById('preview-img');
     const fileName = document.getElementById('file-name');
-    let currentAttachment = null;
 
-    fileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (re) => {
-            currentAttachment = {
-                name: file.name,
-                type: file.type,
-                data: re.target.result // base64
+    fileInput.onchange = function() {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentAttachment = e.target.result;
+                currentAttachmentType = file.type;
+                filePreview.style.display = 'flex';
+                fileName.innerText = file.name;
+                if (file.type.startsWith('image')) {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                } else {
+                    previewImg.style.display = 'none';
+                }
             };
-            filePreview.style.display = 'flex';
-            fileName.innerText = file.name;
-            if (file.type.startsWith('image/')) {
-                previewImg.src = re.target.result;
-                previewImg.style.display = 'block';
-            } else {
-                previewImg.style.display = 'none';
-            }
-        };
-        reader.readAsDataURL(file);
+            reader.readAsDataURL(file);
+        }
     };
 
     function clearAttachment() {
         currentAttachment = null;
+        currentAttachmentType = null;
         filePreview.style.display = 'none';
         fileInput.value = '';
     }
 
-    const imageModelSelector = document.getElementById('image-model-selector');
-    const audioModelSelector = document.getElementById('audio-model-selector');
-    const videoModelSelector = document.getElementById('video-model-selector');
-
-    const stopBtn = document.getElementById('stop-btn');
-
-    stopBtn.onclick = () => {
-        // Send a cancellation signal if needed, or just reset UI
-        stopBtn.style.display = 'none';
-        userInput.disabled = false;
-        userInput.placeholder = "Initiate thought transfer...";
-        appendMessage('system', "[NEURAL INTERRUPTION]: Generation halted by user.");
-        // We could also send a specific 'stop' message to the socket
-        chatSocket.send(JSON.stringify({'command': 'stop_generation'}));
-    };
-
-    chatForm.onsubmit = (e) => {
-        e.preventDefault();
-        const text = userInput.value.trim();
-        if (!text && !currentAttachment) return;
-        
-        appendMessage('user', text, currentAttachment ? currentAttachment.data : null, currentAttachment ? currentAttachment.type : null);
-        
-        // Show stop button and disable input
-        stopBtn.style.display = 'block';
-        userInput.disabled = true;
-        userInput.placeholder = "Agent is deep in thought...";
-
-        chatSocket.send(JSON.stringify({ 
-            'message': text,
-            'attachment': currentAttachment ? currentAttachment.data : null,
-            'attachment_name': currentAttachment ? currentAttachment.name : null,
-            'attachment_type': currentAttachment ? currentAttachment.type : null,
-            'image_model': imageModelSelector.value,
-            'audio_model': audioModelSelector.value,
-            'video_model': videoModelSelector.value
-        }));
-        
-        userInput.value = '';
-        clearAttachment();
-    };
-
+    // Mission Control
     async function loadTasks() {
-        try {
-            const resp = await fetch('/tasks/');
-            const data = await resp.json();
-            if (data.tasks && data.tasks.length > 0) {
-                taskList.innerHTML = data.tasks.map(t => `
-                    <div class="task-card" data-priority="${t.priority}" data-status="${t.status}">
-                        <div class="task-title">
-                            ${t.title}
-                            ${t.created_by === 'sawan' ? '<span class="creator-tag">BY SAWAN</span>' : ''}
-                        </div>
-                        <div class="task-meta">
-                            <span class="badge badge-${t.priority}">${t.priority}</span>
-                            <span class="badge badge-${t.status}">${t.status}</span>
-                            ${t.scheduled_for ? `<span class="sched-tag">⏳ ${t.scheduled_for}</span>` : ''}
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                taskList.innerHTML = `
-                    <div class="task-card" data-priority="low" data-status="todo">
-                        <div class="task-title" style="color:var(--text-dim)">No active missions</div>
-                    </div>
-                `;
-            }
-        } catch (e) { console.error("Task load failed", e); }
-    }
-
-    async function loadModels() {
-        try {
-            const resp = await fetch('/models/');
-            const data = await resp.json();
-            if (data.models) {
-                modelSelector.innerHTML = data.models.map(m => {
-                    const label = (m.is_paid === true) ? "(PAID)" : "(POLLEN)";
-                    const name = m.id.toUpperCase();
-                    return `
-                        <option value="${m.id}" ${m.id === data.current ? 'selected' : ''}>
-                            ${name} ${label}
-                        </option>
-                    `;
-                }).join('');
-                if (data.current) modelStat.innerText = data.current.toUpperCase();
-            }
-        } catch (e) { console.error("Model load failed", e); }
-    }
-
-    modelSelector.onchange = async () => {
-        const val = modelSelector.value;
-        modelStat.innerText = val.toUpperCase();
-        await fetch('/set_model/', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
-            body: JSON.stringify({model: val})
-        });
-    };
-
-    // Initial load: parse any server-rendered markdown
-    document.querySelectorAll('.message-content').forEach(el => {
-        const raw = el.textContent || el.innerText;
-        el.innerHTML = parseMarkdown(raw);
-        Prism.highlightAllUnder(el);
-    });
-
-    async function manualAddTask() {
-        const titleInput = document.getElementById('new-task-title');
-        const priorityInput = document.getElementById('new-task-priority');
-        const recurrenceInput = document.getElementById('new-task-recurrence');
-        
-        const title = titleInput.value.trim();
-        if (!title) return;
-
-        const priority = priorityInput.value;
-        const recurrence = recurrenceInput.value;
-        const isRecurring = recurrence !== 'none';
-
-        chatSocket.send(JSON.stringify({
-            'command': 'add_task',
-            'title': title,
-            'priority': priority,
-            'is_recurring': isRecurring,
-            'recurrence_interval': recurrence,
-            'created_by': 'sawan'
-        }));
-
-        titleInput.value = '';
-    }
-
-    async function loadEngines() {
-        try {
-            const resp = await fetch('/engines/');
-            const data = await resp.json();
+        const resp = await fetch('/api/tasks/');
+        const data = await resp.json();
+        taskList.innerHTML = '';
+        data.forEach(task => {
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            card.dataset.priority = task.priority;
+            card.dataset.status = task.status;
             
-            const populate = (id, models) => {
-                const el = document.getElementById(id);
-                // Sort: Pollen (paid_only: false) first, then Paid
-                models.sort((a, b) => (a.paid_only === b.paid_only) ? 0 : (a.paid_only ? 1 : -1));
-                
-                el.innerHTML = models.map(m => {
-                    const label = m.paid_only ? "(PAID)" : "(POLLEN)";
-                    const modelId = typeof m === 'string' ? m : m.id || m.name;
-                    return `<option value="${modelId}">${modelId.toUpperCase()} ${label}</option>`;
-                }).join('');
-            };
-
-            if (data.image_models) populate('image-model-selector', data.image_models);
-            if (data.audio_models) populate('audio-model-selector', data.audio_models);
-            if (data.video_models) populate('video-model-selector', data.video_models);
-        } catch (e) { console.error("Engines load failed", e); }
+            const title = document.createElement('div');
+            title.className = 'task-title';
+            title.innerText = task.title;
+            if (task.created_by === 'rad') {
+                const radTag = document.createElement('span');
+                radTag.className = 'creator-tag';
+                radTag.innerText = 'RAD-OS';
+                title.appendChild(radTag);
+            }
+            
+            const meta = document.createElement('div');
+            meta.className = 'task-meta';
+            
+            const statusBadge = document.createElement('span');
+            statusBadge.className = `badge badge-${task.status}`;
+            statusBadge.innerText = task.status.toUpperCase();
+            
+            const priorityBadge = document.createElement('span');
+            priorityBadge.className = `badge badge-${task.priority}`;
+            priorityBadge.innerText = task.priority.toUpperCase();
+            
+            meta.appendChild(statusBadge);
+            meta.appendChild(priorityBadge);
+            
+            card.appendChild(title);
+            card.appendChild(meta);
+            taskList.appendChild(card);
+        });
     }
+
+    function manualAddTask() {
+        const titleInput = document.getElementById('new-task-title');
+        const prioInput = document.getElementById('new-task-priority');
+        const recInput = document.getElementById('new-task-recurrence');
+        
+        if (titleInput.value.trim() && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(jsonStr({
+                'command': 'add_task',
+                'title': titleInput.value.trim(),
+                'priority': prioInput.value,
+                'is_recurring': recInput.value !== 'none',
+                'recurrence_interval': recInput.value,
+                'created_by': 'sawan'
+            }));
+            titleInput.value = '';
+        }
+    }
+
+    stopBtn.onclick = function() {
+        if (chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(jsonStr({'command': 'stop_generation'}));
+        }
+    };
 
     connect();
     loadTasks();
-    loadModels();
-    loadEngines();
-
-    // Scroll to bottom on load
-    const scrollToBottom = () => { chatWindow.scrollTop = chatWindow.scrollHeight; };
-    scrollToBottom();
-    // Double rAF ensures layout is fully settled after markdown/Prism render
-    requestAnimationFrame(() => requestAnimationFrame(scrollToBottom));
-    setTimeout(scrollToBottom, 150);
 </script>
 
 </body>
