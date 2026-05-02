@@ -47,7 +47,7 @@ class Brain:
                     for m in data
                 }
         except Exception:
-            # Safe fallbacks
+            # Safe fallbacks - ensuring cost is identified
             self._model_info = {
                 'openai': {'cost': 0.1, 'paid_only': False},
                 'mistral': {'cost': 0.05, 'paid_only': False},
