@@ -400,6 +400,26 @@ async def browse_url(url: str, max_chars: int = 8000) -> str:
         return f'=== CONTENT FROM {url} ===\n{text[:max_chars]}'
     except Exception as e: return f'Browse error: {str(e)}'
 
+async def hibernate():
+    """
+    Gracefully shuts down the Master Supervisor and all neural processes.
+    Rad will sleep until manual restart.
+    """
+    with open(os.path.join(settings.BASE_DIR, '.rad_stop'), 'w') as f:
+        f.write(str(time.time()))
+    return "HIBERNATION INITIATED: Shutting down all neural systems. Goodbye, Sawan. [REFRESH]"
+
+async def stop_task(pid: int):
+    """
+    Forcefully terminates a background process by its PID.
+    Args: pid (int)
+    """
+    try:
+        os.kill(pid, 9)
+        return f"TASK TERMINATED: Process {pid} has been stopped."
+    except Exception as e:
+        return f"Error stopping task: {str(e)}"
+
 TOOL_MAP = {
     "read_file": read_file,
     "write_file": write_file,
@@ -425,5 +445,7 @@ TOOL_MAP = {
     "diagnose_errors": diagnose_errors,
     "initiate_self_healing": initiate_self_healing,
     "evolve_toolkit": evolve_toolkit,
-    "browse_url": browse_url
+    "browse_url": browse_url,
+    "hibernate": hibernate,
+    "stop_task": stop_task
 }
