@@ -41,7 +41,9 @@ class Brain:
                 self._model_info = {
                     m['id']: {
                         'cost': m.get('cost', 0.1),
-                        'paid_only': m.get('paid_only', False)
+                        'paid_only': m.get('paid_only', False),
+                        'tier': m.get('tier', 'anonymous'),
+                        'description': m.get('description', '')
                     }
                     for m in data.get('data', [])
                     if 'text' in m.get('output_modalities', [])

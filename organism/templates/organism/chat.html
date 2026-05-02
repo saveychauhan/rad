@@ -1100,7 +1100,7 @@
 
     async function loadTasks() {
         try {
-            const resp = await fetch('/get_tasks/');
+            const resp = await fetch('/tasks/');
             const data = await resp.json();
             if (data.tasks && data.tasks.length > 0) {
                 taskList.innerHTML = data.tasks.map(t => `
