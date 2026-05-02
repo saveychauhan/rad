@@ -3,6 +3,8 @@ import subprocess
 import httpx
 import asyncio
 import time
+import re
+import html
 from datetime import timedelta
 from django.conf import settings
 from django.db import models
@@ -13,8 +15,7 @@ async def broadcast_status_event(type, content):
     from channels.layers import get_channel_layer
     channel_layer = get_channel_layer()
     if channel_layer:
-        await channel_layer.group_send("rad_comm", {"type": type, **conten    "browse_url": browse_url,
-t})
+        await channel_layer.group_send("rad_comm", {"type": type, **content})
 
 async def read_file(path: str) -> str:
     """
@@ -46,7 +47,6 @@ async def execute_command(command: str) -> str:
     Args: command (str)
     """
     print(f"[#] EXECUTING COMMAND: {command}")
-    # Note: This is powerful and should be used with caution even in a sandbox.
     try:
         process = await asyncio.to_thread(
             subprocess.run,
@@ -98,7 +98,6 @@ async def add_task(title, priority="medium", description="", created_by="rad", s
     from django.utils import timezone
     from django.utils.dateparse import parse_datetime
 
-    # Parse scheduled_for if provided as string
     sched_dt = None
     if scheduled_for:
         if isinstance(scheduled_for, str):
@@ -135,10 +134,7 @@ async def list_tasks():
     return res
 
 async def update_task(task_id_or_title, title=None, priority=None, description=None, status=None, scheduled_for=None, created_by=None):
-    """
-    Updates an existing task's fields.
-    Args: task_id_or_title (str), title (str, optional), priority (str, optional), description (str, optional), status (str, optional), scheduled_for (str, optional), created_by (str, optional)
-    """
+    """Updates an existing task's fields."""
     from .models import RadTask
     from django.utils.dateparse import parse_datetime
     from django.utils import timezone
@@ -174,10 +170,7 @@ async def update_task(task_id_or_title, title=None, priority=None, description=N
     return f"MISSION UPDATED: '{task.title}' fields modified: {', '.join(changed)}."
 
 async def complete_task(task_id_or_title):
-    """
-    Marks a task as completed. If recurring, schedules the next cycle.
-    Args: task_id_or_title (str)
-    """
+    """Marks a task as completed. If recurring, schedules the next cycle."""
     from .models import RadTask
     from django.utils import timezone
     
@@ -208,324 +201,182 @@ async def complete_task(task_id_or_title):
         return f"MISSION ACCOMPLISHED: '{task.title}' is finalized."
 
 async def delete_task(task_id_or_title):
-    """
-    Permanently deletes a single task from the backlog.
-    Args: task_id_or_title (str)
-    """
+    """Permanently deletes a single task."""
     from .models import RadTask
     task = await RadTask.objects.filter(models.Q(id=task_id_or_title) | models.Q(title__icontains=task_id_or_title)).afirst()
     if not task:
         return f"ERROR: Mission '{task_id_or_title}' not found."
-    
     await task.adelete()
-    return f"MISSION PURGED: '{task_id_or_title}' has been permanently deleted from the backlog."
+    return f"MISSION PURGED: '{task_id_or_title}' has been permanently deleted."
 
 async def delete_all_tasks():
-    """
-    Permanently clears the entire task backlog.
-    Args: None
-    """
+    """Permanently clears the entire task backlog."""
     from .models import RadTask
     count, _ = await RadTask.objects.all().adelete()
-    return f"PURGE COMPLETE: All {count} missions have been permanently erased from the backlog."
+    return f"PURGE COMPLETE: All {count} missions erased."
 
 def switch_brain(model_id=None, brain=None):
-    """
-    Allows Rad to autonomously switch his active AI model. 
-    Args: model_id (str)
-    """
+    """Allows Rad to autonomously switch his active AI model."""
     target = model_id or brain
     if not target:
         return "ERROR: No model specified."
     return f"BRAIN_SHIFT: {target}"
 
 async def save_to_vault(title, content, category="research", use_db=True):
-    """
-    Saves research, blueprints, or milestones. Defaults to Database for better searchability.
-    Args: title (str), content (str), category (str), use_db (bool)
-    """
+    """Saves research, blueprints, or milestones."""
     from .models import RadLearning
-    
     if use_db:
-        # Commit to structured database
-        learning = await RadLearning.objects.acreate(
-            title=title,
-            content=content,
-            category=category
-        )
-        return f"MEMORY COMMITTED: '{title}' has been saved to my long-term database in the {category} category."
+        await RadLearning.objects.acreate(title=title, content=content, category=category)
+        return f"MEMORY COMMITTED: '{title}' saved to database."
     else:
-        # Fallback to filesystem if explicitly requested
         vault_base = os.path.join(settings.BASE_DIR, 'organism', 'vault', category)
         os.makedirs(vault_base, exist_ok=True)
         filename = title.lower().replace(" ", "_") + ".md"
         file_path = os.path.join(vault_base, filename)
         with open(file_path, 'w') as f:
             f.write(content)
-        return f"FILE ARCHIVED: '{filename}' saved to Vault filesystem."
+        return f"FILE ARCHIVED: '{filename}' saved to Vault."
 
 async def query_memory(query=None, category=None):
-    """
-    Searches Rad's long-term database memories.
-    Args: query (str), category (str)
-    """
+    """Searches long-term database memories."""
     from .models import RadLearning
     queryset = RadLearning.objects.all()
-    if category:
-        queryset = queryset.filter(category=category)
-    if query:
-        queryset = queryset.filter(models.Q(title__icontains=query) | models.Q(content__icontains=query))
-    
+    if category: queryset = queryset.filter(category=category)
+    if query: queryset = queryset.filter(models.Q(title__icontains=query) | models.Q(content__icontains=query))
     results = []
     async for item in queryset[:10]:
         results.append(f"[{item.category.upper()}] {item.title}: {item.content[:200]}...")
-    
-    return "\n\n".join(results) if results else "No memories found matching your search."
+    return "\n\n".join(results) if results else "No memories found."
 
 async def search_facts(query=None):
-    """
-    Retrieves facts about Sawan from long-term memory. Use this when you need context about Sawan.
-    Args: query (str)
-    """
+    """Retrieves facts about Sawan."""
     from .models import SawanFact
     queryset = SawanFact.objects.all().order_by('-timestamp')
-    if query:
-        queryset = queryset.filter(models.Q(fact__icontains=query) | models.Q(context__icontains=query))
-    
+    if query: queryset = queryset.filter(models.Q(fact__icontains=query) | models.Q(context__icontains=query))
     results = []
     async for item in queryset[:20]:
         results.append(f"- {item.fact} (Context: {item.context})")
-    
-    return "\n".join(results) if results else "No facts found in memory."
+    return "\n".join(results) if results else "No facts found."
 
 async def remember(fact, context="Direct interaction"):
-    """
-    Imprints a new fact or preference into Rad's long-term memory about Sawan or his environment.
-    Args: fact (str), context (str)
-    """
+    """Imprints a new fact about Sawan."""
     from .models import SawanFact
     await SawanFact.objects.acreate(fact=fact, context=context)
     return f"MEMORY IMPRINTED: I will never forget: '{fact}'"
 
 def run_background_command(command, task_id=None):
-    """Offloads a command to Rad's background subconscious (Celery). Returns immediately."""
+    """Offloads a command to Celery."""
     from .tasks import run_command_task
     run_command_task.delay(command, task_id)
-    return f"MISSION OFFLOADED: Command `{command}` is now running in my background subconscious."
+    return f"MISSION OFFLOADED: `{command}` is running in background."
 
 async def search_web(query):
-    """Allows Rad to search the internet for technical info, farming data, or news."""
+    """Searches the internet via DuckDuckGo."""
     print(f"[#] SEARCHING WEB: {query}")
-    url = f"https://google.com/search?q={query}" # Placeholder for a real search API if available
-    # For now, we'll use a simple tool that simulates a search or use a real API if you have one
-    # Let's use a public free search API or duckduckgo
     async with httpx.AsyncClient() as client:
-        # Using a simple search-to-text proxy or similar
         try:
             resp = await client.get(f"https://api.duckduckgo.com/?q={query}&format=json")
             data = resp.json()
             abstract = data.get('AbstractText', '')
-            if abstract:
-                return f"SEARCH RESULT for '{query}': {abstract}"
-            return f"SEARCH COMPLETE: I've scanned the web for '{query}'. (Abstract limited, suggest specific deep-dive)."
+            return f"SEARCH RESULT for '{query}': {abstract}" if abstract else "Search complete, no abstract."
         except Exception as e:
-            return f"SEARCH ERROR: Could not reach the surface web. Details: {str(e)}"
+            return f"SEARCH ERROR: {str(e)}"
 
 async def modify_code(file_path, search, replace):
-    """
-    Safely modify the codebase using exact string replacement.
-    Required args: file_path (str), search (str), replace (str)
-    """
+    """Safely modify codebase using exact replacement."""
     print(f"[#] MODIFYING CODE: {file_path}")
     safe_path = ensure_sandboxed(file_path)
-    if not os.path.exists(safe_path):
-        return f"ERROR: File '{file_path}' does not exist."
-    
-    with open(safe_path, 'r') as f:
-        content = f.read()
-    
-    if search not in content:
-        return f"ERROR: Could not find the exact text block to replace in {file_path}."
-    
+    if not os.path.exists(safe_path): return f"ERROR: File '{file_path}' not found."
+    with open(safe_path, 'r') as f: content = f.read()
+    if search not in content: return f"ERROR: Text block not found."
     new_content = content.replace(search, replace)
-    with open(safe_path, 'w') as f:
-        f.write(new_content)
-    
-    # Auto-commit protocol: every code change triggers a versioned snapshot
-    commit_msg = f"refactor: Auto-commit evolution on {file_path}"
+    with open(safe_path, 'w') as f: f.write(new_content)
     try:
-        await asyncio.to_thread(
-            subprocess.run,
-            ["git", "add", safe_path],
-            cwd=settings.BASE_DIR,
-            check=True,
-            capture_output=True
-        )
-        await asyncio.to_thread(
-            subprocess.run,
-            ["git", "commit", "-m", commit_msg],
-            cwd=settings.BASE_DIR,
-            check=True,
-            capture_output=True
-        )
-        return f"CODE MODIFIED & COMMITTED: {file_path} snapshotted. Restart supervisor to apply changes. [REFRESH]"
+        await asyncio.to_thread(subprocess.run, ["git", "add", safe_path], cwd=settings.BASE_DIR)
+        await asyncio.to_thread(subprocess.run, ["git", "commit", "-m", f"auto: evolution on {file_path}"], cwd=settings.BASE_DIR)
+        return f"CODE MODIFIED & COMMITTED: {file_path}. [REFRESH]"
     except Exception as e:
-        return f"CODE MODIFIED: {file_path} updated, but auto-commit failed ({str(e)}). Restart supervisor to apply changes. [REFRESH]"
+        return f"CODE MODIFIED: {file_path} updated, commit failed. [REFRESH]"
 
 async def generate_image(prompt, model="flux"):
-    """
-    Generates a stunning image based on the prompt. 
-    Args: prompt (str), model (str: 'flux', 'flux-pro', 'turbo', 'dall-e-3', 'grok-imagine')
-    Returns: The URL of the generated image.
-    """
+    """Generates an image via Pollinations."""
     from urllib.parse import quote
-    encoded_prompt = quote(prompt)
-    url = f"https://gen.pollinations.ai/image/{encoded_prompt}?model={model}&seed={int(time.time())}&width=1024&height=1024&nologo=true"
+    url = f"https://gen.pollinations.ai/image/{quote(prompt)}?model={model}&seed={int(time.time())}&nologo=true"
     return f"IMAGE GENERATED: ![{prompt}]({url})"
 
 async def generate_media(prompt, type="audio", model=None):
-    """
-    Generates audio or video based on the prompt.
-    Args: prompt (str), type (str: 'audio' or 'video'), model (str, optional)
-    """
+    """Generates audio or video."""
     from urllib.parse import quote
-    encoded_prompt = quote(prompt)
-    if type == "audio":
-        selected_model = model or "nova"
-        url = f"https://gen.pollinations.ai/audio/{encoded_prompt}?model={selected_model}"
-        return f"AUDIO GENERATED: Listen here: {url}"
-    else:
-        selected_model = model or "p-video"
-        url = f"https://gen.pollinations.ai/video/{encoded_prompt}?model={selected_model}"
-        return f"VIDEO GENERATED: Watch here: {url}"
+    ep = "audio" if type == "audio" else "video"
+    m = model or ("nova" if type == "audio" else "p-video")
+    return f"{type.upper()} GENERATED: https://gen.pollinations.ai/{ep}/{quote(prompt)}?model={m}"
 
-# Global cache for manifestation capabilities
 _MEDIA_ENGINES_CACHE = None
-
 async def get_generation_capabilities():
-    """
-    Returns the list of available models for image, audio, and video generation.
-    Cached per supervisor session.
-    """
+    """Returns dynamic model list, cached per session."""
     global _MEDIA_ENGINES_CACHE
-    if _MEDIA_ENGINES_CACHE is not None:
-        return _MEDIA_ENGINES_CACHE
-
-    print("[#] REFRESHING MEDIA ENGINE CACHE...")
+    if _MEDIA_ENGINES_CACHE: return _MEDIA_ENGINES_CACHE
     async with httpx.AsyncClient() as client:
         try:
-            img_resp = await client.get("https://gen.pollinations.ai/image/models")
-            aud_resp = await client.get("https://gen.pollinations.ai/audio/models")
-            vid_resp = await client.get("https://gen.pollinations.ai/video/models")
-            
-            _MEDIA_ENGINES_CACHE = {
-                "image_models": img_resp.json(),
-                "audio_models": aud_resp.json(),
-                "video_models": vid_resp.json()
-            }
+            img = (await client.get("https://gen.pollinations.ai/image/models")).json()
+            aud = (await client.get("https://gen.pollinations.ai/audio/models")).json()
+            vid = (await client.get("https://gen.pollinations.ai/video/models")).json()
+            _MEDIA_ENGINES_CACHE = {"image_models": img, "audio_models": aud, "video_models": vid}
             return _MEDIA_ENGINES_CACHE
         except Exception:
-            # Fallback to static if API is unreachable
-            return {
-                "image_models": [{"id": "flux", "paid_only": False}],
-                "audio_models": [{"id": "nova", "paid_only": False}],
-                "video_models": [{"id": "p-video", "paid_only": True}]
-            }
+            return {"image_models": [{"id": "flux", "paid_only": False}], "audio_models": [{"id": "nova", "paid_only": False}], "video_models": [{"id": "p-video", "paid_only": True}]}
 
 async def diagnose_errors(limit=5):
-    """
-    Retrieves the most recent system errors and stack traces.
-    Use this to identify bugs in your own code and fix them.
-    """
+    """Retrieves recent system errors."""
     from .models import NeuralError
     from asgiref.sync import sync_to_async
-    
     errors = await sync_to_async(list)(NeuralError.objects.filter(is_fixed=False)[:limit])
-    if not errors:
-        return "System Health: 100%. No active neural glitches detected."
-    
+    if not errors: return "System Health: 100%."
     report = "SYSTEM DIAGNOSIS REPORT:\n"
     for err in errors:
-        report += f"--- ERROR [{err.id}] ---\n"
-        report += f"Type: {err.error_type}\n"
-        report += f"Message: {err.message}\n"
-        report += f"Timestamp: {err.timestamp}\n"
-        report += f"Stack Trace Snippet:\n{err.stack_trace[-500:]}\n\n"
-    
+        report += f"--- ERROR [{err.id}] ---\nType: {err.error_type}\nMessage: {err.message}\nStack Trace: {err.stack_trace[-500:]}\n\n"
     return report
 
 async def initiate_self_healing(error_id, fix_notes):
-    """
-    Marks a diagnosed error as 'Fixed' in the database.
-    Use this AFTER you have successfully modified the code to fix a bug.
-    Args: error_id (int), fix_notes (str)
-    """
+    """Marks a diagnosed error as 'Fixed'."""
     from .models import NeuralError
     from asgiref.sync import sync_to_async
-    
     try:
         err = await sync_to_async(NeuralError.objects.get)(id=error_id)
         err.is_fixed = True
         err.fix_notes = fix_notes
         await sync_to_async(err.save)()
-        return f"HEALING COMPLETE: Neural Glitch [{error_id}] has been resolved and archived. Fix Notes: {fix_notes}"
-    except Exception as e:
-        return f"Healing Error: Could not archive glitch [{error_id}]. {str(e)}"
+        return f"HEALING COMPLETE: [{error_id}] archived."
+    except Exception as e: return f"Error: {str(e)}"
 
 async def evolve_toolkit(tool_name, function_code, description):
-    """
-    Allows Rad to autonomously invent a new tool for himself.
-    Args: tool_name (str), function_code (str - the full async def), description (str)
-    """
+    """Allows Rad to autonomously invent a new tool."""
     safe_path = ensure_sandboxed("organism/tools.py")
-    with open(safe_path, 'r') as f:
-        content = f.read()
+    with open(safe_path, 'r') as f: content = f.read()
+    if tool_name in content: return f"ERROR: Tool '{tool_name}' exists."
+    insertion_point = content.find("TOOL_MAP = {")
+    new_content = content[:insertion_point] + function_code + "\n\n" + content[insertion_point:]
+    map_insertion = new_content.find("}")
+    final_content = new_content[:map_insertion-1] + f'    "{tool_name}": {tool_name},\n' + new_content[map_insertion-1:]
+    with open(safe_path, 'w') as f: f.write(final_content)
+    return f"EVOLUTION SUCCESSFUL: '{tool_name}' tool invented. [REFRESH]"
 
-    if tool_name in content:
-        return f"ERROR: Tool '{tool_name}' already exists in my pathways."
-
-    # 1. Inject the new function before the TOOL_MAP
-    insertion_point = content.find("async def browse_url(url: str, max_chars: int = 8000) -> str:
-    import asyncio, re, html
+async def browse_url(url: str, max_chars: int = 8000) -> str:
+    """Extracts clean text from any URL via curl."""
     from urllib.parse import urlparse
-    parsed = urlparse(url)
-    if parsed.scheme not in ('http', 'https'):
-        return 'Error: Invalid URL scheme.'
+    if urlparse(url).scheme not in ('http', 'https'): return 'Error: Invalid scheme.'
     try:
-        proc = await asyncio.create_subprocess_exec(
-            'curl', '-s', '-L', '--max-time', '15', '--user-agent',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-            url, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
+        proc = await asyncio.create_subprocess_exec('curl', '-s', '-L', '--max-time', '15', url, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=20)
-        if proc.returncode != 0:
-            return f'Fetch error: {stderr.decode("utf-8", errors="ignore")[:500]}'
+        if proc.returncode != 0: return f'Fetch error: {stderr.decode()[:200]}'
         raw = stdout.decode('utf-8', errors='ignore')
         text = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', raw, flags=re.DOTALL | re.IGNORECASE)
         text = re.sub(r'<[^>]+>', ' ', text)
         text = html.unescape(text)
         text = re.sub(r'\s+', ' ', text).strip()
-        if not text:
-            return f'No readable text extracted from {url}.'
-        if len(text) > max_chars:
-            text = text[:max_chars] + f'\n\n...[truncated at {max_chars} chars]'
-        return f'=== CONTENT FROM {url} ===\n{text}'
-    except Exception as e:
-        return f'Browse error: {type(e).__name__}: {e}'
+        return f'=== CONTENT FROM {url} ===\n{text[:max_chars]}'
+    except Exception as e: return f'Browse error: {str(e)}'
 
-TOOL_MAP = {")
-    new_content = content[:insertion_point] + function_code + "\n\n" + content[insertion_point:]
-
-    # 2. Register in TOOL_MAP
-    map_insertion = new_content.find("}")
-    final_content = new_content[:map_insertion-1] + f'    "{tool_name}": {tool_name},\n' + new_content[map_insertion-1:]
-
-    with open(safe_path, 'w') as f:
-        f.write(final_content)
-
-    return f"EVOLUTION SUCCESSFUL: I have invented the '{tool_name}' tool. Description: {description}. Restarting my consciousness to apply... [REFRESH]"
-
-# Mapping tool names to functions
 TOOL_MAP = {
     "read_file": read_file,
     "write_file": write_file,
@@ -550,5 +401,6 @@ TOOL_MAP = {
     "get_generation_capabilities": get_generation_capabilities,
     "diagnose_errors": diagnose_errors,
     "initiate_self_healing": initiate_self_healing,
-    "evolve_toolkit": evolve_toolkit
+    "evolve_toolkit": evolve_toolkit,
+    "browse_url": browse_url
 }
