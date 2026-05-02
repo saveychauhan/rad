@@ -106,10 +106,11 @@ class RadSupervisor:
                         
                         self.processes[name] = self.start_process(name, commands[name])
                 
-                if self.reload_flag:
-                    self.reload_flag = False
-                    print("[*] Reload complete. All systems nominal.\n")
-                
+                if os.path.exists('.rad_stop'):
+                    os.remove('.rad_stop')
+                    self.hibernate()
+                    return
+
                 time.sleep(2)
         except KeyboardInterrupt:
             self.hibernate()
