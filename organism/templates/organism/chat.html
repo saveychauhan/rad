@@ -1030,5 +1030,12 @@
     loadTasks();
 </script>
 
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const chat = document.getElementById('chat-window');
+    if (chat) chat.scrollTop = chat.scrollHeight;
+  });
+</script>
+
 </body>
 </html>
